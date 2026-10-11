@@ -744,12 +744,55 @@
         return (M.top + PH - svgY) / PH * costMax;
       }
 
-      hit.addEventListener("pointermove", event => update(priceFromPointer(event)));
+      // One finger controls the chart; two fingers scroll until all fingers lift.
+      function bindChartTouch(surface, onPoint, onStart = () => {}) {
+        let scrolling = false;
+        let lastY = null;
+        const centroidY = touches => Array.from(touches).reduce((sum, touch) => sum + touch.clientY, 0) / touches.length;
+        function handle(event) {
+          if (event.cancelable) event.preventDefault();
+          if (event.type === "touchstart") onStart();
+          if (event.touches.length >= 2) {
+            const y = centroidY(event.touches);
+            if (scrolling && lastY !== null) window.scrollBy(0, lastY - y);
+            scrolling = true;
+            lastY = y;
+            return;
+          }
+          if (scrolling) {
+            lastY = null;
+            return;
+          }
+          if (event.touches.length === 1) onPoint(event.touches[0]);
+        }
+        function end(event) {
+          if (event.cancelable) event.preventDefault();
+          if (event.touches.length === 0) {
+            scrolling = false;
+            lastY = null;
+          } else {
+            lastY = event.touches.length >= 2 ? centroidY(event.touches) : null;
+          }
+        }
+        surface.addEventListener("touchstart", handle, { passive: false });
+        surface.addEventListener("touchmove", handle, { passive: false });
+        surface.addEventListener("touchend", end, { passive: false });
+        surface.addEventListener("touchcancel", end, { passive: false });
+      }
+
+      bindChartTouch(svg, touch => update(priceFromPointer(touch)));
+
+      hit.addEventListener("pointermove", event => {
+        if (event.pointerType === "touch") return;
+        update(priceFromPointer(event));
+      });
       hit.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
         hit.setPointerCapture(event.pointerId);
         update(priceFromPointer(event));
       });
       hit.addEventListener("pointerup", event => {
+        if (event.pointerType === "touch") return;
         if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
       });
       slider.addEventListener("input", event => update(event.target.value));

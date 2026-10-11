@@ -698,6 +698,49 @@
         slider.value = l.toFixed(2);
       }
 
+      // One finger selects on the chart; two fingers scroll until all fingers lift.
+      let scrolling = false;
+      let lastY = null;
+      const handledTouchEvents = new WeakSet();
+      function bindChartTouch(svg, onPoint, onStart = () => {}) {
+        const centroidY = touches => Array.from(touches).reduce((sum, touch) => sum + touch.clientY, 0) / touches.length;
+        const handle = event => {
+          if (handledTouchEvents.has(event)) return;
+          handledTouchEvents.add(event);
+          if (event.cancelable) event.preventDefault();
+          const touches = event.touches;
+          if (touches.length >= 2) {
+            const y = centroidY(touches);
+            if (scrolling && lastY !== null) window.scrollBy(0, lastY - y);
+            scrolling = true;
+            lastY = y;
+            return;
+          }
+          if (scrolling) {
+            lastY = null;
+            return;
+          }
+          if (touches.length === 1) {
+            if (event.type === "touchstart") onStart();
+            onPoint(touches[0]);
+          }
+        };
+        const end = event => {
+          if (handledTouchEvents.has(event)) return;
+          handledTouchEvents.add(event);
+          if (event.cancelable) event.preventDefault();
+          if (event.touches.length === 0) {
+            scrolling = false;
+            lastY = null;
+          } else {
+            lastY = event.touches.length >= 2 ? centroidY(event.touches) : null;
+          }
+        };
+        svg.addEventListener("touchstart", handle, { passive: false });
+        svg.addEventListener("touchmove", handle, { passive: false });
+        svg.addEventListener("touchend", end, { passive: false });
+        svg.addEventListener("touchcancel", end, { passive: false });
+      }
       const hit = svgEl("rect", {
         class: "hit-area", x: M.left - 8, y: M.top - 8,
         width: PW + 16, height: PH + 16, "aria-label": "移动鼠标选择劳动投入"
@@ -710,14 +753,21 @@
         return (svgX - M.left) / PW * lMax;
       }
 
-      hit.addEventListener("pointermove", event => update(lFromPointer(event)));
+      hit.addEventListener("pointermove", event => {
+        if (event.pointerType === "touch") return;
+        update(lFromPointer(event));
+      });
       hit.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
         hit.setPointerCapture(event.pointerId);
         update(lFromPointer(event));
       });
       hit.addEventListener("pointerup", event => {
+        if (event.pointerType === "touch") return;
         if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
       });
+      bindChartTouch(tpSvg, point => update(lFromPointer(point)));
+      bindChartTouch(productSvg, () => {});
       slider.addEventListener("input", event => update(event.target.value));
 
       update(4);

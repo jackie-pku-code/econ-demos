@@ -183,7 +183,7 @@
     .current-point { fill: var(--demand); stroke: var(--paper); stroke-width: 4; }
     .current-point.tangent { fill: var(--gold); }
     .mr-point { fill: var(--loss); stroke: var(--paper); stroke-width: 3.4; }
-    .acmin-point { fill: var(--muted); stroke: var(--paper); stroke-width: 2.4; }
+    .acmin-point { fill: var(--ac); stroke: var(--paper); stroke-width: 2.4; }
     .hit-area { fill: transparent; cursor: ew-resize; }
     .pill { fill: var(--demand); }
     .pill-gold { fill: var(--gold); }
@@ -307,6 +307,16 @@
       color: var(--muted);
     }
     .proof strong { color: var(--mc); }
+    .proof p { margin: 0 0 12px; }
+    .proof .formula {
+      overflow-x: auto;
+      padding: 8px 0 14px;
+      color: var(--ink);
+      font-size: clamp(18px, 2.4vw, 27px);
+    }
+    .proof math { margin: 0; width: max-content; min-width: 100%; }
+    .proof ol { margin: 0; padding-inline-start: 26px; }
+    .proof li { margin: 6px 0; }
 
     .alert {
       min-height: 20px;
@@ -335,6 +345,7 @@
       .readouts { grid-template-columns: repeat(2, 1fr); }
       .controls { grid-template-columns: 1fr 1fr; }
       .controls label { grid-column: 1 / -1; }
+      .proof .formula { font-size: clamp(12px, 3.6vw, 18px); }
     }
   </style>
 </head>
@@ -382,9 +393,27 @@
     <div class="alert" id="alertBox">切点与 MR = MC 交点在同一垂线</div>
 
     <div class="proof">
-      <strong>数学证明（为何一定成立）</strong><br>
-      切线条件：① P(Q*) = AC(Q*)（等高）　② P′(Q*) = AC′(Q*)（等斜率）<br>
-      ∵ MR(Q*) = P + Q · P′ = AC + Q · AC′ = MC(Q*)　∴ 切点处恒有 <strong>MR = MC</strong>
+      <p>Another way of understanding the above feature is to recognize the potential link between MR and P, and AC and MC.</p>
+      <div class="formula">
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="MC equals partial C over partial Q equals partial of AC times Q over partial Q equals partial AC over partial Q times Q plus AC">
+          <mi>MC</mi><mo>=</mo><mfrac><mrow><mo>∂</mo><mi>C</mi></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>=</mo>
+          <mfrac><mrow><mo>∂</mo><mo>(</mo><mi>AC</mi><mo>·</mo><mi>Q</mi><mo>)</mo></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>=</mo>
+          <mfrac><mrow><mo>∂</mo><mi>AC</mi></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>·</mo><mi>Q</mi><mo>+</mo><mi>AC</mi>
+        </math>
+      </div>
+      <div class="formula">
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="MR equals partial R over partial Q equals partial of P of Q times Q over partial Q equals partial P of Q over partial Q times Q plus P">
+          <mi>MR</mi><mo>=</mo><mfrac><mrow><mo>∂</mo><mi>R</mi></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>=</mo>
+          <mfrac><mrow><mo>∂</mo><mo>(</mo><mi>P</mi><mo>(</mo><mi>Q</mi><mo>)</mo><mo>·</mo><mi>Q</mi><mo>)</mo></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>=</mo>
+          <mfrac><mrow><mo>∂</mo><mi>P</mi><mo>(</mo><mi>Q</mi><mo>)</mo></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>·</mo><mi>Q</mi><mo>+</mo><mi>P</mi>
+        </math>
+      </div>
+      <p>Given this, if any two of the facts below are true, then the remaining one will be true as well (at the same Q &gt; 0):</p>
+      <ol>
+        <li>MR = MC (Profit maximization)</li>
+        <li>AC = P (Zero profit)</li>
+        <li>∂AC/∂Q = ∂P/∂Q (Average cost curve tangent with the demand curve)</li>
+      </ol>
     </div>
   </main>
 
@@ -542,7 +571,7 @@
       for (const el of [qPill, qPillText, pPill, pPillText, dLabel, mrLabel, tangLabel]) chart.appendChild(el);
 
       const acMin = svgEl("circle", { class: "acmin-point", cx: x(3), cy: y(11), r: 4 });
-      const acMinText = svgEl("text", { class: "annotation", x: x(3) + 8, y: y(11) - 6, fill: "var(--muted)" }, "AC_min = 11");
+      const acMinText = svgEl("text", { class: "annotation", x: x(3) - 12, y: y(11) - 14, "text-anchor": "end", fill: "var(--ac)" }, "AC_min = 11");
       chart.appendChild(acMin);
       chart.appendChild(acMinText);
 
@@ -584,16 +613,18 @@
         curves.appendChild(svgEl("path", { class: "demand-path", d: curvePath(Q => D_fn(Q, a), 0, qMax) }));
         curves.appendChild(svgEl("path", { class: "mr-path", d: curvePath(Q => MR_fn(Q, a), 0, qMax) }));
 
-        // curve labels
+        // curve labels — nudged clear to the right of each curve
         const acP = AC_fn(6.0);
-        if (acP > 0 && acP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(6.0) + 6, y: y(acP) + 4, fill: "var(--ac)" }, "AC"));
-        const mcP = MC_fn(4.6);
-        if (mcP > 0 && mcP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(4.6) + 6, y: y(mcP) + 4, fill: "var(--mc)" }, "MC"));
-        const dP = D_fn(5.9, a);
-        if (dP > 0 && dP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(5.9) + 6, y: y(dP) + 4, fill: "var(--demand)" }, "D"));
-        for (let q = 0.8; q <= 4; q += 0.2) {
-          const mrv = MR_fn(q, a);
-          if (mrv > 3 && mrv < pMax - 3) { curves.appendChild(svgEl("text", { class: "annotation", x: x(q) + 6, y: y(mrv) - 3, fill: "var(--mr)", opacity: 0.9 }, "MR")); break; }
+        if (acP > 0 && acP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(6.0) + 17, y: y(acP) + 4, fill: "var(--ac)" }, "AC"));
+        const mcP = MC_fn(4.5);
+        if (mcP > 0 && mcP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(4.5) + 17, y: y(mcP) + 4, fill: "var(--mc)" }, "MC"));
+        const dIdQ = Math.min(6.25, (a - 2) / 2);
+        const dP = D_fn(dIdQ, a);
+        if (dP > 0 && dP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(dIdQ) + 28, y: y(dP) + 4, fill: "var(--demand)" }, "D"));
+        const mrIdQ = (a - 3.5) / 4;
+        const mrIdP = MR_fn(mrIdQ, a);
+        if (mrIdP > 3 && mrIdP < pMax - 3) {
+          curves.appendChild(svgEl("text", { class: "annotation", x: x(mrIdQ) + 24, y: y(mrIdP) + 5, fill: "var(--mr)", opacity: 0.95 }, "MR"));
         }
 
         // D = AC intersection markers (non-tangent only)
@@ -671,7 +702,7 @@
         dLabel.setAttribute("x", x(Qs) + 12);
         dLabel.setAttribute("y", y(Math.min(Math.max(Pv, 0), pMax)) + 4);
         dLabel.setAttribute("fill", tang ? "var(--gold)" : "var(--demand)");
-        dLabel.textContent = `P* = ${fmt2.format(Pv)}`;
+        dLabel.textContent = fmt2.format(Pv);
 
         tangLabel.setAttribute("x", x(Qs) + 12);
         tangLabel.setAttribute("y", y(Math.min(Math.max(Pv, 0), pMax)) - 16);
@@ -689,12 +720,12 @@
 
         if (Pv > 0 && Pv < pMax) {
           pPill.setAttribute("class", "pill");
-          pPill.setAttribute("x", M.left - 60);
+          pPill.setAttribute("x", M.left - 72);
           pPill.setAttribute("y", y(Pv) - 11.5);
-          pPill.setAttribute("width", 54); pPill.setAttribute("height", 23);
-          pPillText.setAttribute("x", M.left - 33);
+          pPill.setAttribute("width", 66); pPill.setAttribute("height", 23);
+          pPillText.setAttribute("x", M.left - 39);
           pPillText.setAttribute("y", y(Pv) + 4);
-          pPillText.textContent = fmt1.format(Pv);
+          pPillText.textContent = `P*=${fmt1.format(Pv)}`;
         }
 
         // panel values
@@ -716,9 +747,52 @@
         return Math.min(25, Math.max(10, price));
       }
 
-      hit.addEventListener("pointermove", event => { if (event.buttons) draw(aFromPointer(event)); });
-      hit.addEventListener("pointerdown", event => { hit.setPointerCapture(event.pointerId); draw(aFromPointer(event)); });
-      hit.addEventListener("pointerup", event => { if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
+      // One finger controls the chart; two fingers scroll the page.
+      // Keep scrolling latched until every finger lifts, avoiding a chart jump.
+      function bindChartTouch(svg, onPoint, onStart = () => {}) {
+        let scrolling = false;
+        let lastY = null;
+        const centroidY = touches => Array.from(touches).reduce((sum, touch) => sum + touch.clientY, 0) / touches.length;
+        const handle = event => {
+          if (event.cancelable) event.preventDefault();
+          const touches = event.touches;
+          if (touches.length >= 2) {
+            const currentY = centroidY(touches);
+            if (scrolling && lastY !== null) window.scrollBy(0, lastY - currentY);
+            scrolling = true;
+            lastY = currentY;
+            return;
+          }
+          if (scrolling) { lastY = null; return; }
+          if (touches.length === 1) {
+            if (event.type === "touchstart") onStart();
+            onPoint(touches[0]);
+          }
+        };
+        const end = event => {
+          if (event.cancelable) event.preventDefault();
+          if (event.touches.length === 0) {
+            scrolling = false;
+            lastY = null;
+          } else {
+            lastY = event.touches.length >= 2 ? centroidY(event.touches) : null;
+          }
+        };
+        svg.addEventListener("touchstart", handle, { passive: false });
+        svg.addEventListener("touchmove", handle, { passive: false });
+        svg.addEventListener("touchend", end, { passive: false });
+        svg.addEventListener("touchcancel", end, { passive: false });
+      }
+
+      hit.addEventListener("pointermove", event => { if (event.pointerType !== "touch" && event.buttons) draw(aFromPointer(event)); });
+      hit.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
+        hit.setPointerCapture(event.pointerId);
+        draw(aFromPointer(event));
+      });
+      hit.addEventListener("pointerup", event => { if (event.pointerType !== "touch" && hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
+      hit.addEventListener("pointercancel", event => { if (event.pointerType !== "touch" && hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
+      bindChartTouch(chart, point => draw(aFromPointer(point)));
 
       slider.addEventListener("input", event => draw(Number(event.target.value)));
       document.getElementById("snapButton").addEventListener("click", () => {
