@@ -1,0 +1,733 @@
+﻿<!doctype html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Demand Curve and AC Tangency</title>
+  <style>
+    :root {
+      --page: #eef3f8;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #66748a;
+      --line: #d7e0ea;
+      --grid: #dfe6ee;
+      --demand: #1f74d0;
+      --mr: #1f74d0;
+      --ac: #159f91;
+      --mc: #e5a12a;
+      --gold: #c08a00;
+      --profit: #2f9e44;
+      --loss: #d84a43;
+      --soft-demand: rgba(31, 116, 208, 0.12);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #111827;
+        --paper: #172033;
+        --ink: #f3f6fb;
+        --muted: #aeb9ca;
+        --line: #354158;
+        --grid: #344057;
+        --demand: #6ab0ff;
+        --mr: #6ab0ff;
+        --ac: #38d6c1;
+        --mc: #f5b942;
+        --gold: #ffd166;
+        --profit: #61d978;
+        --loss: #ff7770;
+        --soft-demand: rgba(106, 176, 255, 0.14);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 18px auto;
+      padding: 24px 28px 22px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 52px rgba(20, 35, 60, 0.10);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(29px, 4vw, 50px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .demand-text { color: var(--demand); font-weight: 800; }
+    .ac-text { color: var(--ac); font-weight: 800; }
+    .mc-text { color: var(--mc); font-weight: 800; }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 10px;
+      max-width: 720px;
+      margin: 0 auto 18px;
+    }
+
+    .readout {
+      min-height: 70px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--paper) 94%, var(--page));
+    }
+
+    .readout .label {
+      display: block;
+      margin-block-end: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .readout .value {
+      font-size: 21px;
+      line-height: 1.18;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #stateValue.profit { color: var(--profit); }
+    #stateValue.zero { color: var(--gold); }
+    #stateValue.loss { color: var(--loss); }
+    #interceptValue { color: var(--gold); }
+    #aValue { color: var(--demand); }
+
+    .panel {
+      min-width: 0;
+      padding: 14px 16px 9px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--paper) 97%, var(--page));
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      text-align: center;
+      font-size: 19px;
+      line-height: 1.25;
+    }
+
+    .panel-note {
+      min-height: 38px;
+      margin: 0 0 2px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
+    .axis { stroke: var(--ink); stroke-width: 1.8; }
+    .tick { stroke: var(--ink); stroke-width: 1.1; }
+    .tick-label, .axis-label {
+      fill: var(--ink);
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .annotation, .point-label {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .tick-label { font-size: 12px; }
+    .axis-label { font-size: 16px; font-weight: 800; }
+    .annotation { font-size: 13px; font-weight: 780; }
+    .point-label { font-size: 12px; font-weight: 800; }
+    .demand-path { fill: none; stroke: var(--demand); stroke-width: 5; stroke-linecap: round; }
+    .mr-path { fill: none; stroke: var(--mr); stroke-width: 3.2; stroke-linecap: round; stroke-dasharray: 9 6; opacity: 0.72; }
+    .ac-path { fill: none; stroke: var(--ac); stroke-width: 5; stroke-linecap: round; }
+    .mc-path { fill: none; stroke: var(--mc); stroke-width: 5; stroke-linecap: round; }
+    .profit-rect { fill: rgba(47, 158, 68, 0.13); stroke: rgba(47, 158, 68, 0.4); stroke-width: 1.3; }
+    .loss-rect { fill: rgba(216, 74, 67, 0.13); stroke: rgba(216, 74, 67, 0.4); stroke-width: 1.3; }
+    .guide { stroke: #7182a0; stroke-width: 1.4; stroke-dasharray: 6 5; }
+    .demand-guide { stroke: var(--demand); stroke-width: 1.3; stroke-dasharray: 5 5; opacity: 0.5; }
+    .mr-guide { stroke: var(--mc); stroke-width: 1.3; stroke-dasharray: 5 5; opacity: 0.5; }
+    .qline { stroke: #7182a0; stroke-width: 1.5; stroke-dasharray: 8 5; }
+    .qline-tangent { stroke: var(--gold); stroke-width: 2.6; stroke-dasharray: 8 5; }
+    .current-point { fill: var(--demand); stroke: var(--paper); stroke-width: 4; }
+    .current-point.tangent { fill: var(--gold); }
+    .mr-point { fill: var(--loss); stroke: var(--paper); stroke-width: 3.4; }
+    .acmin-point { fill: var(--muted); stroke: var(--paper); stroke-width: 2.4; }
+    .hit-area { fill: transparent; cursor: ew-resize; }
+    .pill { fill: var(--demand); }
+    .pill-gold { fill: var(--gold); }
+    .pill-text {
+      fill: #ffffff;
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .status-card {
+      fill: var(--paper);
+      stroke: var(--line);
+      stroke-width: 1.2;
+      filter: drop-shadow(0 3px 5px rgba(20, 35, 60, 0.16));
+    }
+    .proof-text {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .proof-strong { fill: var(--mc); }
+    .proof-plain { fill: var(--muted); }
+
+    .controls {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 650px) auto auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 1010px;
+      margin: 14px auto 0;
+      padding-block-start: 14px;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .controls label, .controls output {
+      font-size: 14px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--demand);
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 9px 14px;
+      color: var(--ink);
+      background: var(--paper);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { border-color: var(--gold); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+      margin-block-start: 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 20px;
+      height: 4px;
+      border-radius: 2px;
+    }
+    .swatch-dash {
+      width: 20px;
+      height: 0;
+      border-block-start: 3px dashed;
+    }
+
+    .status-box {
+      text-align: center;
+      padding: 11px 14px;
+      border-radius: 11px;
+      font-size: 15px;
+      font-weight: 800;
+      margin-block-start: 12px;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .s-profit {
+      color: var(--profit);
+      background: color-mix(in srgb, var(--profit) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--profit) 45%, transparent);
+    }
+    .s-zero {
+      color: var(--gold);
+      background: color-mix(in srgb, var(--gold) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+    }
+    .s-loss {
+      color: var(--loss);
+      background: color-mix(in srgb, var(--loss) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
+    }
+
+    .proof {
+      margin-block-start: 12px;
+      padding: 11px 14px;
+      border-radius: 11px;
+      background: var(--soft-demand);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .proof strong { color: var(--mc); }
+
+    .alert {
+      min-height: 20px;
+      margin-block-start: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 750;
+      color: var(--gold);
+    }
+
+    .equations {
+      margin-block-start: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .equations b { color: var(--ink); }
+
+    @media (max-width: 900px) {
+      main { width: min(100% - 16px, 760px); padding: 20px 14px; }
+      .controls { grid-template-columns: 1fr auto; }
+      .controls input { grid-column: 1 / -1; grid-row: 2; }
+    }
+
+    @media (max-width: 560px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .controls { grid-template-columns: 1fr 1fr; }
+      .controls label { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Demand Curve and AC Tangency</h1>
+    <p class="subtitle">上下移动<span class="demand-text">需求曲线 D</span>，切线时观察切点与 <span class="mc-text">MR = MC</span> 交点落在同一条垂线上</p>
+
+    <section class="readouts" aria-label="当前数值" aria-live="polite">
+      <div class="readout"><span class="label">需求截距 a</span><span class="value" id="aValue">16.0</span></div>
+      <div class="readout"><span class="label">最优产量 Q*</span><span class="value" id="interceptValue">2.00</span></div>
+      <div class="readout"><span class="label">企业状态</span><span class="value zero" id="stateValue">零利润</span></div>
+    </section>
+
+    <section class="panel">
+      <h2>切点 ≡ MR = MC：为何落在同一条垂线</h2>
+      <p class="panel-note">当 <span class="demand-text">D</span> 恰好与 <span class="ac-text">AC</span> 相切时，切点横坐标与 <span class="mc-text">MR = MC</span> 的交点横坐标完全一致</p>
+      <svg id="tangencyChart" viewBox="0 0 1000 585" role="img" aria-labelledby="tangencyTitle tangencyDesc">
+        <title id="tangencyTitle">需求曲线与 AC 切线动态演示</title>
+        <desc id="tangencyDesc">需求曲线上下移动时，最优产量为边际收益等于边际成本的交点。当需求曲线与平均成本曲线相切时，切点与交点位于同一条垂线。</desc>
+      </svg>
+    </section>
+
+    <div class="controls">
+      <label for="demandSlider">调整需求截距 a</label>
+      <input id="demandSlider" type="range" min="10" max="25" step="0.05" value="16" aria-label="需求截距 a">
+      <output id="sliderOutput" for="demandSlider">a = 16.0</output>
+      <button id="snapButton" type="button">跳到切线位置</button>
+    </div>
+
+    <div class="legend" aria-label="图例">
+      <span class="legend-item"><span class="swatch" style="background:var(--demand)"></span>需求曲线 D</span>
+      <span class="legend-item"><span class="swatch-dash" style="border-color:var(--mr)"></span>边际收益 MR</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--ac)"></span>平均成本 AC</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--mc)"></span>边际成本 MC</span>
+      <span class="legend-item"><span class="swatch-dash" style="border-color:var(--gold)"></span>Q* 垂线（切时变金色）</span>
+    </div>
+
+    <div class="status-box s-zero" id="statusBox">零利润（长期均衡）</div>
+
+    <div class="equations" id="equations">
+      D: P = <b id="eq1">16.0</b> − 2Q　　　MR: P = <b id="eq2">16.0</b> − 4Q
+    </div>
+
+    <div class="alert" id="alertBox">切点与 MR = MC 交点在同一垂线</div>
+
+    <div class="proof">
+      <strong>数学证明（为何一定成立）</strong><br>
+      切线条件：① P(Q*) = AC(Q*)（等高）　② P′(Q*) = AC′(Q*)（等斜率）<br>
+      ∵ MR(Q*) = P + Q · P′ = AC + Q · AC′ = MC(Q*)　∴ 切点处恒有 <strong>MR = MC</strong>
+    </div>
+  </main>
+
+  <script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 1000;
+      const H = 585;
+      const M = { left: 100, right: 58, top: 42, bottom: 72 };
+      const PW = W - M.left - M.right;
+      const PH = H - M.top - M.bottom;
+      const qMax = 7.2;
+      const pMax = 31;
+      const aTangent = 16;
+
+      const chart = document.getElementById("tangencyChart");
+      const slider = document.getElementById("demandSlider");
+      const fmt1 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const fmt2 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      const x = q => M.left + q / qMax * PW;
+      const y = p => M.top + (1 - p / pMax) * PH;
+
+      const AC_fn = Q => Q * Q - 6 * Q + 20;
+      const MC_fn = Q => 3 * Q * Q - 12 * Q + 20;
+      const D_fn  = (Q, a) => a - 2 * Q;
+      const MR_fn = (Q, a) => a - 4 * Q;
+
+      // MR = MC:  3Q² − 8Q + (20 − a) = 0  →  Q = (8 + √(12a − 176)) / 6
+      function optQ(a) {
+        const disc = 12 * a - 176;
+        if (disc < 0) return null;
+        return (8 + Math.sqrt(disc)) / 6;
+      }
+
+      // D = AC:  Q² − 4Q + (20 − a) = 0  →  Q = 2 ± √(a − 16)
+      function dacIntersections(a) {
+        const d = a - 16;
+        if (d < 0) return [];
+        if (d < 1e-4) return [2];
+        const s = Math.sqrt(d);
+        return [2 - s, 2 + s].filter(q => q >= 0 && q <= qMax);
+      }
+
+      function svgEl(name, attrs = {}, text = "") {
+        const el = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function curvePath(fn, qLo, qHi, samples = 400) {
+        let d = "";
+        let pen = false;
+        for (let i = 0; i <= samples; i++) {
+          const q = qLo + (i / samples) * (qHi - qLo);
+          const p = fn(q);
+          if (!isFinite(p) || p < -2 || p > pMax + 3) { pen = false; continue; }
+          d += (pen ? " L" : " M") + x(q).toFixed(2) + "," + y(Math.min(Math.max(p, -1), pMax + 2)).toFixed(2);
+          pen = true;
+        }
+        return d.trim();
+      }
+
+      // ── static chrome: frame, grid, axes, clip ──
+      const defs = svgEl("defs");
+      const clip = svgEl("clipPath", { id: "plotClip" });
+      clip.appendChild(svgEl("rect", { x: M.left, y: M.top, width: PW, height: PH }));
+      defs.appendChild(clip);
+      const mkArrow = id => {
+        const marker = svgEl("marker", { id, markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5, orient: "auto", markerUnits: "strokeWidth" });
+        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "currentColor" }));
+        return marker;
+      };
+      defs.appendChild(mkArrow("arrow-6"));
+      chart.appendChild(defs);
+
+      chart.appendChild(svgEl("rect", { class: "frame", x: M.left, y: M.top, width: PW, height: PH }));
+      for (let q = 0; q <= Math.floor(qMax); q++) {
+        if (q > 0) chart.appendChild(svgEl("line", { class: "grid-line", x1: x(q), y1: M.top, x2: x(q), y2: M.top + PH }));
+        chart.appendChild(svgEl("line", { class: "tick", x1: x(q), y1: M.top + PH, x2: x(q), y2: M.top + PH + 6 }));
+        chart.appendChild(svgEl("text", { class: "tick-label", x: x(q), y: M.top + PH + 22, "text-anchor": "middle" }, String(q)));
+      }
+      for (let p = 0; p <= pMax; p += 5) {
+        if (p > 0) chart.appendChild(svgEl("line", { class: "grid-line", x1: M.left, y1: y(p), x2: M.left + PW, y2: y(p) }));
+        chart.appendChild(svgEl("line", { class: "tick", x1: M.left - 6, y1: y(p), x2: M.left, y2: y(p) }));
+        chart.appendChild(svgEl("text", { class: "tick-label", x: M.left - 11, y: y(p) + 5, "text-anchor": "end" }, String(p)));
+      }
+      chart.appendChild(svgEl("line", { class: "axis", x1: M.left, y1: M.top + PH, x2: M.left + PW + 15, y2: M.top + PH, "marker-end": "url(#arrow-6)" }));
+      chart.appendChild(svgEl("line", { class: "axis", x1: M.left, y1: M.top + PH, x2: M.left, y2: M.top - 14, "marker-end": "url(#arrow-6)" }));
+      chart.appendChild(svgEl("text", { class: "axis-label", x: M.left + PW + 23, y: M.top + PH + 6 }, "Q"));
+      chart.appendChild(svgEl("text", { class: "axis-label", x: M.left - 8, y: M.top - 19, "text-anchor": "end" }, "P"));
+
+      // ── dynamic layer ──
+      const layer = svgEl("g", { "clip-path": "url(#plotClip)" });
+      chart.appendChild(layer);
+
+      const curves = svgEl("g");
+      layer.appendChild(curves);
+      const rect = svgEl("rect");
+      layer.appendChild(rect);
+
+      const dacsG = svgEl("g");
+      layer.appendChild(dacsG);
+
+      // guides + q* line (unclipped so labels stay visible)
+      const qLine = svgEl("line", { class: "qline" });
+      const dGuide = svgEl("line", { class: "demand-guide" });
+      const mrGuide = svgEl("line", { class: "mr-guide" });
+      const dPoint = svgEl("circle", { class: "current-point", r: 8 });
+      const mrPoint = svgEl("circle", { class: "mr-point", r: 7 });
+      chart.appendChild(qLine);
+      chart.appendChild(dGuide);
+      chart.appendChild(mrGuide);
+      chart.appendChild(dPoint);
+      chart.appendChild(mrPoint);
+
+      const dLabel = svgEl("text", { class: "point-label" });
+      const mrLabel = svgEl("text", { class: "point-label" });
+      const tangLabel = svgEl("text", { class: "annotation" });
+      const qPill = svgEl("rect", { class: "pill", rx: 6, width: 62, height: 23 });
+      const qPillText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const pPill = svgEl("rect", { class: "pill", rx: 6, width: 54, height: 23 });
+      const pPillText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      for (const el of [qPill, qPillText, pPill, pPillText, dLabel, mrLabel, tangLabel]) chart.appendChild(el);
+
+      const acMin = svgEl("circle", { class: "acmin-point", cx: x(3), cy: y(11), r: 4 });
+      const acMinText = svgEl("text", { class: "annotation", x: x(3) + 8, y: y(11) - 6, fill: "var(--muted)" }, "AC_min = 11");
+      chart.appendChild(acMin);
+      chart.appendChild(acMinText);
+
+      const hit = svgEl("rect", { class: "hit-area", x: M.left, y: M.top, width: PW, height: PH, "aria-label": "上下移动需求曲线" });
+      chart.appendChild(hit);
+
+      function setState(state, text) {
+        const box = document.getElementById("statusBox");
+        box.className = "status-box s-" + (state === "shutdown" ? "loss" : state);
+        box.textContent = text;
+        const badge = document.getElementById("stateValue");
+        badge.className = state === "shutdown" ? "loss" : state;
+        badge.textContent = state === "profit" ? "正利润" : state === "zero" ? "零利润" : state === "loss" ? "亏损" : "无均衡";
+      }
+
+      function clearDynamic() {
+        curves.replaceChildren();
+        dacsG.replaceChildren();
+        rect.removeAttribute("class");
+        rect.setAttribute("width", 0);
+        rect.setAttribute("height", 0);
+        for (const el of [qLine, dGuide, mrGuide]) el.setAttribute("stroke", "none");
+        dPoint.setAttribute("r", 0);
+        mrPoint.setAttribute("r", 0);
+        for (const el of [dLabel, mrLabel, tangLabel, qPillText, pPillText]) el.textContent = "";
+        for (const el of [qPill, pPill]) { el.setAttribute("width", 0); el.setAttribute("height", 0); }
+        document.getElementById("alertBox").textContent = "";
+      }
+
+      function draw(a) {
+        clearDynamic();
+
+        const Qs = optQ(a);
+        const tang = Math.abs(a - aTangent) < 0.25;
+
+        // curves (AC, MC, D, MR)
+        curves.appendChild(svgEl("path", { class: "ac-path", d: curvePath(AC_fn, 0.1, qMax) }));
+        curves.appendChild(svgEl("path", { class: "mc-path", d: curvePath(MC_fn, 0.1, qMax) }));
+        curves.appendChild(svgEl("path", { class: "demand-path", d: curvePath(Q => D_fn(Q, a), 0, qMax) }));
+        curves.appendChild(svgEl("path", { class: "mr-path", d: curvePath(Q => MR_fn(Q, a), 0, qMax) }));
+
+        // curve labels
+        const acP = AC_fn(6.0);
+        if (acP > 0 && acP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(6.0) + 6, y: y(acP) + 4, fill: "var(--ac)" }, "AC"));
+        const mcP = MC_fn(4.6);
+        if (mcP > 0 && mcP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(4.6) + 6, y: y(mcP) + 4, fill: "var(--mc)" }, "MC"));
+        const dP = D_fn(5.9, a);
+        if (dP > 0 && dP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(5.9) + 6, y: y(dP) + 4, fill: "var(--demand)" }, "D"));
+        for (let q = 0.8; q <= 4; q += 0.2) {
+          const mrv = MR_fn(q, a);
+          if (mrv > 3 && mrv < pMax - 3) { curves.appendChild(svgEl("text", { class: "annotation", x: x(q) + 6, y: y(mrv) - 3, fill: "var(--mr)", opacity: 0.9 }, "MR")); break; }
+        }
+
+        // D = AC intersection markers (non-tangent only)
+        if (!tang) {
+          for (const q of dacIntersections(a)) {
+            const p = D_fn(q, a);
+            if (p < 0 || p > pMax) continue;
+            dacsG.appendChild(svgEl("line", { class: "demand-guide", x1: x(q), y1: M.top + PH, x2: x(q), y2: y(p) + 6 }));
+            dacsG.appendChild(svgEl("circle", { cx: x(q), cy: y(p), r: 5, fill: "var(--demand)", opacity: 0.4, stroke: "var(--demand)", "stroke-width": 1.4, "stroke-opacity": 0.7 }));
+          }
+        }
+
+        const eq1 = document.getElementById("eq1");
+        const eq2 = document.getElementById("eq2");
+        document.getElementById("aValue").textContent = fmt1.format(a);
+        document.getElementById("sliderOutput").textContent = `a = ${fmt1.format(a)}`;
+        eq1.textContent = fmt1.format(a);
+        eq2.textContent = fmt1.format(a);
+
+        if (!Qs || Qs <= 0.1 || Qs >= qMax) {
+          document.getElementById("interceptValue").textContent = "--";
+          setState("shutdown", "需求过低，无 MR = MC 交点");
+          return;
+        }
+
+        const Pv = D_fn(Qs, a);
+        const ACv = AC_fn(Qs);
+        const MRv = MR_fn(Qs, a);
+        const MCv = MC_fn(Qs);
+        const pi = (Pv - ACv) * Qs;
+
+        // profit / loss rectangle
+        if (Math.abs(Pv - ACv) > 0.08 && Pv > 0 && ACv > 0) {
+          const topP = Math.max(Pv, ACv);
+          const botP = Math.min(Pv, ACv);
+          rect.setAttribute("class", Pv > ACv ? "profit-rect" : "loss-rect");
+          rect.setAttribute("x", M.left);
+          rect.setAttribute("y", y(topP));
+          rect.setAttribute("width", Math.max(0, x(Qs) - M.left));
+          rect.setAttribute("height", Math.max(0, y(botP) - y(topP)));
+        }
+
+        // Q* vertical line
+        const topP = Math.max(Pv, ACv, MRv > 0 ? MRv : 0) + 1.5;
+        qLine.setAttribute("class", tang ? "qline-tangent" : "qline");
+        qLine.setAttribute("stroke", tang ? "var(--gold)" : "#7182a0");
+        qLine.setAttribute("x1", x(Qs)); qLine.setAttribute("x2", x(Qs));
+        qLine.setAttribute("y1", y(Math.min(topP, pMax))); qLine.setAttribute("y2", M.top + PH);
+
+        // guide lines
+        if (Pv > 0 && Pv < pMax) {
+          dGuide.setAttribute("stroke", "var(--demand)");
+          dGuide.setAttribute("x1", M.left); dGuide.setAttribute("x2", x(Qs));
+          dGuide.setAttribute("y1", y(Pv)); dGuide.setAttribute("y2", y(Pv));
+        }
+        if (MRv > 0 && MRv < pMax) {
+          mrGuide.setAttribute("stroke", "var(--mc)");
+          mrGuide.setAttribute("x1", M.left); mrGuide.setAttribute("x2", x(Qs));
+          mrGuide.setAttribute("y1", y(MRv)); mrGuide.setAttribute("y2", y(MRv));
+        }
+
+        // MR = MC point
+        mrPoint.setAttribute("r", 7);
+        mrPoint.setAttribute("cx", x(Qs));
+        mrPoint.setAttribute("cy", y(Math.min(Math.max(MRv, 0), pMax)));
+        mrLabel.setAttribute("x", x(Qs) + 10);
+        mrLabel.setAttribute("y", y(Math.min(Math.max(MRv, 0), pMax)) - 5);
+        mrLabel.setAttribute("fill", "var(--loss)");
+        mrLabel.textContent = "MR = MC";
+
+        // demand point (tangent point)
+        dPoint.setAttribute("class", tang ? "current-point tangent" : "current-point");
+        dPoint.setAttribute("cx", x(Qs));
+        dPoint.setAttribute("cy", y(Math.min(Math.max(Pv, 0), pMax)));
+        dLabel.setAttribute("x", x(Qs) + 12);
+        dLabel.setAttribute("y", y(Math.min(Math.max(Pv, 0), pMax)) + 4);
+        dLabel.setAttribute("fill", tang ? "var(--gold)" : "var(--demand)");
+        dLabel.textContent = `P* = ${fmt2.format(Pv)}`;
+
+        tangLabel.setAttribute("x", x(Qs) + 12);
+        tangLabel.setAttribute("y", y(Math.min(Math.max(Pv, 0), pMax)) - 16);
+        tangLabel.setAttribute("fill", "var(--gold)");
+        tangLabel.textContent = tang ? "切点" : "";
+
+        // axis pills
+        qPill.setAttribute("class", tang ? "pill-gold" : "pill");
+        qPill.setAttribute("x", Math.min(Math.max(x(Qs) - 31, M.left - 6), M.left + PW - 56));
+        qPill.setAttribute("y", M.top + PH + 7);
+        qPill.setAttribute("width", 62); qPill.setAttribute("height", 23);
+        qPillText.setAttribute("x", Number(qPill.getAttribute("x")) + 31);
+        qPillText.setAttribute("y", M.top + PH + 23);
+        qPillText.textContent = `Q*=${fmt1.format(Qs)}`;
+
+        if (Pv > 0 && Pv < pMax) {
+          pPill.setAttribute("class", "pill");
+          pPill.setAttribute("x", M.left - 60);
+          pPill.setAttribute("y", y(Pv) - 11.5);
+          pPill.setAttribute("width", 54); pPill.setAttribute("height", 23);
+          pPillText.setAttribute("x", M.left - 33);
+          pPillText.setAttribute("y", y(Pv) + 4);
+          pPillText.textContent = fmt1.format(Pv);
+        }
+
+        // panel values
+        document.getElementById("interceptValue").textContent = fmt2.format(Qs);
+        document.getElementById("alertBox").textContent = tang
+          ? "切点与 MR = MC 交点在同一垂线"
+          : pi > 0.1 ? "此时 D 高于 AC，存在正利润" : pi < -0.1 ? "此时 D 低于 AC，存在亏损" : "";
+
+        if (tang) setState("zero", "零利润（长期均衡）");
+        else if (pi > 0.1) setState("profit", "正利润：D 与 AC 有两点相交");
+        else if (pi < -0.1) setState("loss", "亏损：D 低于 AC");
+        else setState("zero", "零利润");
+      }
+
+      function aFromPointer(event) {
+        const bounds = chart.getBoundingClientRect();
+        const svgY = (event.clientY - bounds.top) / bounds.height * H;
+        const price = (1 - (svgY - M.top) / PH) * pMax;
+        return Math.min(25, Math.max(10, price));
+      }
+
+      hit.addEventListener("pointermove", event => { if (event.buttons) draw(aFromPointer(event)); });
+      hit.addEventListener("pointerdown", event => { hit.setPointerCapture(event.pointerId); draw(aFromPointer(event)); });
+      hit.addEventListener("pointerup", event => { if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
+
+      slider.addEventListener("input", event => draw(Number(event.target.value)));
+      document.getElementById("snapButton").addEventListener("click", () => {
+        slider.value = String(aTangent);
+        draw(aTangent);
+      });
+
+      draw(aTangent);
+    })();
+  </script>
+</body>
+</html>
