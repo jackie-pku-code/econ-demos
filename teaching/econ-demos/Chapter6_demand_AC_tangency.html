@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>Demand Curve and AC Tangency</title>
+  <title>Equilibrium under Monopolistic Competition</title>
   <style>
     :root {
       --page: #eef3f8;
@@ -86,13 +86,13 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(130px, 1fr));
       gap: 10px;
-      max-width: 720px;
-      margin: 0 auto 18px;
+      max-width: 800px;
+      margin: 18px auto;
     }
 
     .readout {
-      min-height: 70px;
-      padding: 10px 13px;
+      min-height: 88px;
+      padding: 12px 16px;
       border: 1px solid var(--line);
       border-radius: 11px;
       background: color-mix(in srgb, var(--paper) 94%, var(--page));
@@ -102,14 +102,14 @@
       display: block;
       margin-block-end: 4px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
     }
 
     .readout .value {
-      font-size: 21px;
+      font-size: 28px;
       line-height: 1.18;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
@@ -119,7 +119,7 @@
     #stateValue.zero { color: var(--gold); }
     #stateValue.loss { color: var(--loss); }
     #interceptValue { color: var(--gold); }
-    #aValue { color: var(--demand); }
+    #bValue { color: var(--demand); }
 
     .panel {
       min-width: 0;
@@ -137,12 +137,12 @@
     }
 
     .panel-note {
-      min-height: 38px;
-      margin: 0 0 2px;
+      max-width: 960px;
+      margin: 0 auto 12px;
       text-align: center;
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+      font-size: 17px;
+      line-height: 1.65;
     }
 
     svg {
@@ -152,6 +152,7 @@
       overflow: visible;
       user-select: none;
       touch-action: none;
+      margin-inline: auto;
     }
 
     .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
@@ -219,7 +220,7 @@
     }
 
     .controls label, .controls output {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 750;
       white-space: nowrap;
     }
@@ -237,7 +238,7 @@
       color: var(--ink);
       background: var(--paper);
       font: inherit;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 750;
       cursor: pointer;
       white-space: nowrap;
@@ -251,7 +252,7 @@
       gap: 8px 18px;
       margin-block-start: 11px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 14px;
     }
 
     .legend-item {
@@ -275,7 +276,7 @@
       text-align: center;
       padding: 11px 14px;
       border-radius: 11px;
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 800;
       margin-block-start: 12px;
       transition: background 0.3s, color 0.3s, border-color 0.3s;
@@ -298,15 +299,22 @@
 
     .proof {
       margin-block-start: 12px;
-      padding: 11px 14px;
+      padding: 16px 18px;
       border-radius: 11px;
       background: var(--soft-demand);
       border: 1px solid var(--line);
-      font-size: 13px;
+      font-size: 16px;
       line-height: 1.7;
       color: var(--muted);
     }
     .proof strong { color: var(--mc); }
+    .proof h2 {
+      margin: 0 0 12px;
+      color: var(--ink);
+      font-size: 20px;
+      line-height: 1.45;
+      text-wrap: pretty;
+    }
     .proof p { margin: 0 0 12px; }
     .proof .formula {
       overflow-x: auto;
@@ -322,7 +330,7 @@
       min-height: 20px;
       margin-block-start: 10px;
       text-align: center;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 750;
       color: var(--gold);
     }
@@ -331,7 +339,7 @@
       margin-block-start: 10px;
       text-align: center;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 16px;
     }
     .equations b { color: var(--ink); }
 
@@ -343,36 +351,42 @@
 
     @media (max-width: 560px) {
       .readouts { grid-template-columns: repeat(2, 1fr); }
+      .readout { min-height: 82px; padding: 11px 12px; }
+      .readout .label { font-size: 14px; }
+      .readout .value { font-size: 26px; }
+      .panel-note { font-size: 15px; }
       .controls { grid-template-columns: 1fr 1fr; }
       .controls label { grid-column: 1 / -1; }
+      .controls label, .controls output { font-size: 15px; }
+      button { padding-inline: 10px; font-size: 14px; }
+      .proof { padding: 14px; font-size: 15px; }
+      .proof h2 { font-size: 18px; }
       .proof .formula { font-size: clamp(12px, 3.6vw, 18px); }
     }
   </style>
 </head>
 <body>
   <main>
-    <h1>Demand Curve and AC Tangency</h1>
-    <p class="subtitle">上下移动<span class="demand-text">需求曲线 D</span>，切线时观察切点与 <span class="mc-text">MR = MC</span> 交点落在同一条垂线上</p>
+    <h1>Equilibrium under Monopolistic Competition</h1>
 
     <section class="readouts" aria-label="当前数值" aria-live="polite">
-      <div class="readout"><span class="label">需求截距 a</span><span class="value" id="aValue">16.0</span></div>
+      <div class="readout"><span class="label">横向截距 b</span><span class="value" id="bValue">8.00</span></div>
       <div class="readout"><span class="label">最优产量 Q*</span><span class="value" id="interceptValue">2.00</span></div>
       <div class="readout"><span class="label">企业状态</span><span class="value zero" id="stateValue">零利润</span></div>
     </section>
 
     <section class="panel">
-      <h2>切点 ≡ MR = MC：为何落在同一条垂线</h2>
-      <p class="panel-note">当 <span class="demand-text">D</span> 恰好与 <span class="ac-text">AC</span> 相切时，切点横坐标与 <span class="mc-text">MR = MC</span> 的交点横坐标完全一致</p>
+      <p class="panel-note">左右移动<span class="demand-text">需求曲线 D</span>，当D与AC相切时（零经济利润），观察切点与 <span class="mc-text">MR = MC</span> 交点正好落在同一条垂线上</p>
       <svg id="tangencyChart" viewBox="0 0 1000 585" role="img" aria-labelledby="tangencyTitle tangencyDesc">
         <title id="tangencyTitle">需求曲线与 AC 切线动态演示</title>
-        <desc id="tangencyDesc">需求曲线上下移动时，最优产量为边际收益等于边际成本的交点。当需求曲线与平均成本曲线相切时，切点与交点位于同一条垂线。</desc>
+        <desc id="tangencyDesc">左右拖动需求曲线，调整横向截距 b。最优产量为边际收益等于边际成本的交点。当需求曲线与平均成本曲线相切时，切点与交点位于同一条垂线。</desc>
       </svg>
     </section>
 
     <div class="controls">
-      <label for="demandSlider">调整需求截距 a</label>
-      <input id="demandSlider" type="range" min="10" max="25" step="0.05" value="16" aria-label="需求截距 a">
-      <output id="sliderOutput" for="demandSlider">a = 16.0</output>
+      <label for="demandSlider">调整横向截距 b</label>
+      <input id="demandSlider" type="range" min="5" max="12.5" step="0.025" value="8" aria-label="横向截距 b">
+      <output id="sliderOutput" for="demandSlider">b = 8.00</output>
       <button id="snapButton" type="button">跳到切线位置</button>
     </div>
 
@@ -387,13 +401,14 @@
     <div class="status-box s-zero" id="statusBox">零利润（长期均衡）</div>
 
     <div class="equations" id="equations">
-      D: P = <b id="eq1">16.0</b> − 2Q　　　MR: P = <b id="eq2">16.0</b> − 4Q
+      D: Q = <b id="eq1">8.00</b> − P/2　　　MR: P = <b id="eq2">16.0</b> − 4Q
     </div>
 
     <div class="alert" id="alertBox">切点与 MR = MC 交点在同一垂线</div>
 
-    <div class="proof">
-      <p>Another way of understanding the above feature is to recognize the potential link between MR and P, and AC and MC.</p>
+    <aside class="proof" aria-labelledby="proofTitle">
+      <h2 id="proofTitle">Why, mathematically, does tangency between the demand curve and the average cost curve imply <span style="white-space: nowrap">MR = MC?</span></h2>
+      <p>Since C(Q) = AC(Q) · Q and R(Q) = P(Q) · Q, differentiating with respect to Q gives:</p>
       <div class="formula">
         <math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="MC equals partial C over partial Q equals partial of AC times Q over partial Q equals partial AC over partial Q times Q plus AC">
           <mi>MC</mi><mo>=</mo><mfrac><mrow><mo>∂</mo><mi>C</mi></mrow><mrow><mo>∂</mo><mi>Q</mi></mrow></mfrac><mo>=</mo>
@@ -414,7 +429,7 @@
         <li>AC = P (Zero profit)</li>
         <li>∂AC/∂Q = ∂P/∂Q (Average cost curve tangent with the demand curve)</li>
       </ol>
-    </div>
+    </aside>
   </main>
 
   <script>
@@ -458,6 +473,7 @@
       const qMax = 7.2;
       const pMax = 31;
       const aTangent = 16;
+      const bTangent = aTangent / 2;
 
       const chart = document.getElementById("tangencyChart");
       const slider = document.getElementById("demandSlider");
@@ -543,6 +559,15 @@
 
       const curves = svgEl("g");
       layer.appendChild(curves);
+      // Cost curves stay fixed; demand and MR are straight lines updated in place.
+      curves.appendChild(svgEl("path", { class: "ac-path", d: curvePath(AC_fn, 0.1, qMax) }));
+      curves.appendChild(svgEl("path", { class: "mc-path", d: curvePath(MC_fn, 0.1, qMax) }));
+      const demandPath = svgEl("path", { class: "demand-path" });
+      const mrPath = svgEl("path", { class: "mr-path" });
+      curves.appendChild(demandPath);
+      curves.appendChild(mrPath);
+      const curveLabels = svgEl("g");
+      curves.appendChild(curveLabels);
       const rect = svgEl("rect");
       layer.appendChild(rect);
 
@@ -575,7 +600,7 @@
       chart.appendChild(acMin);
       chart.appendChild(acMinText);
 
-      const hit = svgEl("rect", { class: "hit-area", x: M.left, y: M.top, width: PW, height: PH, "aria-label": "上下移动需求曲线" });
+      const hit = svgEl("rect", { class: "hit-area", x: M.left, y: M.top, width: PW, height: PH, "aria-label": "左右移动需求曲线" });
       chart.appendChild(hit);
 
       function setState(state, text) {
@@ -583,17 +608,17 @@
         box.className = "status-box s-" + (state === "shutdown" ? "loss" : state);
         box.textContent = text;
         const badge = document.getElementById("stateValue");
-        badge.className = state === "shutdown" ? "loss" : state;
+        badge.className = "value " + (state === "shutdown" ? "loss" : state);
         badge.textContent = state === "profit" ? "正利润" : state === "zero" ? "零利润" : state === "loss" ? "亏损" : "无均衡";
       }
 
       function clearDynamic() {
-        curves.replaceChildren();
+        curveLabels.replaceChildren();
         dacsG.replaceChildren();
         rect.removeAttribute("class");
         rect.setAttribute("width", 0);
         rect.setAttribute("height", 0);
-        for (const el of [qLine, dGuide, mrGuide]) el.setAttribute("stroke", "none");
+        for (const el of [qLine, dGuide, mrGuide]) el.setAttribute("visibility", "hidden");
         dPoint.setAttribute("r", 0);
         mrPoint.setAttribute("r", 0);
         for (const el of [dLabel, mrLabel, tangLabel, qPillText, pPillText]) el.textContent = "";
@@ -601,30 +626,42 @@
         document.getElementById("alertBox").textContent = "";
       }
 
-      function draw(a) {
+      let currentB = null;
+      let pendingB = null;
+      let drawFrame = null;
+      let drag = null;
+      const clampB = b => Math.min(12.5, Math.max(5, Math.round(b / 0.025) * 0.025));
+
+      function draw(b) {
+        if (drawFrame !== null) cancelAnimationFrame(drawFrame);
+        drawFrame = null;
+        pendingB = null;
+        b = clampB(b);
+        if (b === currentB) return;
+        currentB = b;
+        slider.value = String(b);
+        // Q = b - P/2 is equivalent to P = 2b - 2Q.
+        const a = 2 * b;
         clearDynamic();
 
         const Qs = optQ(a);
         const tang = Math.abs(a - aTangent) < 0.25;
 
-        // curves (AC, MC, D, MR)
-        curves.appendChild(svgEl("path", { class: "ac-path", d: curvePath(AC_fn, 0.1, qMax) }));
-        curves.appendChild(svgEl("path", { class: "mc-path", d: curvePath(MC_fn, 0.1, qMax) }));
-        curves.appendChild(svgEl("path", { class: "demand-path", d: curvePath(Q => D_fn(Q, a), 0, qMax) }));
-        curves.appendChild(svgEl("path", { class: "mr-path", d: curvePath(Q => MR_fn(Q, a), 0, qMax) }));
+        demandPath.setAttribute("d", `M${x(0)},${y(a)} L${x(qMax)},${y(D_fn(qMax, a))}`);
+        mrPath.setAttribute("d", `M${x(0)},${y(a)} L${x(qMax)},${y(MR_fn(qMax, a))}`);
 
         // curve labels — nudged clear to the right of each curve
         const acP = AC_fn(6.0);
-        if (acP > 0 && acP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(6.0) + 17, y: y(acP) + 4, fill: "var(--ac)" }, "AC"));
+        if (acP > 0 && acP < pMax - 2) curveLabels.appendChild(svgEl("text", { class: "annotation", x: x(6.0) + 17, y: y(acP) + 4, fill: "var(--ac)" }, "AC"));
         const mcP = MC_fn(4.5);
-        if (mcP > 0 && mcP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(4.5) + 17, y: y(mcP) + 4, fill: "var(--mc)" }, "MC"));
+        if (mcP > 0 && mcP < pMax - 2) curveLabels.appendChild(svgEl("text", { class: "annotation", x: x(4.5) + 17, y: y(mcP) + 4, fill: "var(--mc)" }, "MC"));
         const dIdQ = Math.min(6.25, (a - 2) / 2);
         const dP = D_fn(dIdQ, a);
-        if (dP > 0 && dP < pMax - 2) curves.appendChild(svgEl("text", { class: "annotation", x: x(dIdQ) + 28, y: y(dP) + 4, fill: "var(--demand)" }, "D"));
+        if (dP > 0 && dP < pMax - 2) curveLabels.appendChild(svgEl("text", { class: "annotation", x: x(dIdQ) + 28, y: y(dP) + 4, fill: "var(--demand)" }, "D"));
         const mrIdQ = (a - 3.5) / 4;
         const mrIdP = MR_fn(mrIdQ, a);
         if (mrIdP > 3 && mrIdP < pMax - 3) {
-          curves.appendChild(svgEl("text", { class: "annotation", x: x(mrIdQ) + 24, y: y(mrIdP) + 5, fill: "var(--mr)", opacity: 0.95 }, "MR"));
+          curveLabels.appendChild(svgEl("text", { class: "annotation", x: x(mrIdQ) + 24, y: y(mrIdP) + 5, fill: "var(--mr)", opacity: 0.95 }, "MR"));
         }
 
         // D = AC intersection markers (non-tangent only)
@@ -632,16 +669,15 @@
           for (const q of dacIntersections(a)) {
             const p = D_fn(q, a);
             if (p < 0 || p > pMax) continue;
-            dacsG.appendChild(svgEl("line", { class: "demand-guide", x1: x(q), y1: M.top + PH, x2: x(q), y2: y(p) + 6 }));
             dacsG.appendChild(svgEl("circle", { cx: x(q), cy: y(p), r: 5, fill: "var(--demand)", opacity: 0.4, stroke: "var(--demand)", "stroke-width": 1.4, "stroke-opacity": 0.7 }));
           }
         }
 
         const eq1 = document.getElementById("eq1");
         const eq2 = document.getElementById("eq2");
-        document.getElementById("aValue").textContent = fmt1.format(a);
-        document.getElementById("sliderOutput").textContent = `a = ${fmt1.format(a)}`;
-        eq1.textContent = fmt1.format(a);
+        document.getElementById("bValue").textContent = fmt2.format(b);
+        document.getElementById("sliderOutput").textContent = `b = ${fmt2.format(b)}`;
+        eq1.textContent = fmt2.format(b);
         eq2.textContent = fmt1.format(a);
 
         if (!Qs || Qs <= 0.1 || Qs >= qMax) {
@@ -668,19 +704,22 @@
         }
 
         // Q* vertical line
-        const topP = Math.max(Pv, ACv, MRv > 0 ? MRv : 0) + 1.5;
+        const topP = Math.max(Pv, ACv, MRv > 0 ? MRv : 0);
         qLine.setAttribute("class", tang ? "qline-tangent" : "qline");
+        qLine.setAttribute("visibility", "visible");
         qLine.setAttribute("stroke", tang ? "var(--gold)" : "#7182a0");
         qLine.setAttribute("x1", x(Qs)); qLine.setAttribute("x2", x(Qs));
         qLine.setAttribute("y1", y(Math.min(topP, pMax))); qLine.setAttribute("y2", M.top + PH);
 
         // guide lines
         if (Pv > 0 && Pv < pMax) {
+          dGuide.setAttribute("visibility", "visible");
           dGuide.setAttribute("stroke", "var(--demand)");
           dGuide.setAttribute("x1", M.left); dGuide.setAttribute("x2", x(Qs));
           dGuide.setAttribute("y1", y(Pv)); dGuide.setAttribute("y2", y(Pv));
         }
         if (MRv > 0 && MRv < pMax) {
+          mrGuide.setAttribute("visibility", "visible");
           mrGuide.setAttribute("stroke", "var(--mc)");
           mrGuide.setAttribute("x1", M.left); mrGuide.setAttribute("x2", x(Qs));
           mrGuide.setAttribute("y1", y(MRv)); mrGuide.setAttribute("y2", y(MRv));
@@ -740,16 +779,31 @@
         else setState("zero", "零利润");
       }
 
-      function aFromPointer(event) {
+      function beginDrag(point) {
+        if (pendingB !== null) draw(pendingB);
         const bounds = chart.getBoundingClientRect();
-        const svgY = (event.clientY - bounds.top) / bounds.height * H;
-        const price = (1 - (svgY - M.top) / PH) * pMax;
-        return Math.min(25, Math.max(10, price));
+        drag = { startX: point.clientX, startB: currentB, quantityPerPixel: qMax * W / (PW * bounds.width) };
+      }
+
+      function moveDrag(point) {
+        if (!drag) return;
+        pendingB = clampB(drag.startB + (point.clientX - drag.startX) * drag.quantityPerPixel);
+        if (drawFrame === null) {
+          drawFrame = requestAnimationFrame(() => {
+            drawFrame = null;
+            draw(pendingB);
+          });
+        }
+      }
+
+      function endDrag() {
+        if (pendingB !== null) draw(pendingB);
+        drag = null;
       }
 
       // One finger controls the chart; two fingers scroll the page.
       // Keep scrolling latched until every finger lifts, avoiding a chart jump.
-      function bindChartTouch(svg, onPoint, onStart = () => {}) {
+      function bindChartTouch(svg, onPoint, onStart = () => {}, onEnd = () => {}) {
         let scrolling = false;
         let lastY = null;
         const centroidY = touches => Array.from(touches).reduce((sum, touch) => sum + touch.clientY, 0) / touches.length;
@@ -757,6 +811,7 @@
           if (event.cancelable) event.preventDefault();
           const touches = event.touches;
           if (touches.length >= 2) {
+            if (!scrolling) onEnd();
             const currentY = centroidY(touches);
             if (scrolling && lastY !== null) window.scrollBy(0, lastY - currentY);
             scrolling = true;
@@ -765,13 +820,14 @@
           }
           if (scrolling) { lastY = null; return; }
           if (touches.length === 1) {
-            if (event.type === "touchstart") onStart();
+            if (event.type === "touchstart") onStart(touches[0]);
             onPoint(touches[0]);
           }
         };
         const end = event => {
           if (event.cancelable) event.preventDefault();
           if (event.touches.length === 0) {
+            onEnd();
             scrolling = false;
             lastY = null;
           } else {
@@ -784,23 +840,60 @@
         svg.addEventListener("touchcancel", end, { passive: false });
       }
 
-      hit.addEventListener("pointermove", event => { if (event.pointerType !== "touch" && event.buttons) draw(aFromPointer(event)); });
+      hit.addEventListener("pointermove", event => { if (event.pointerType !== "touch" && event.buttons) moveDrag(event); });
       hit.addEventListener("pointerdown", event => {
-        if (event.pointerType === "touch") return;
+        if (event.pointerType === "touch" || event.button !== 0) return;
         hit.setPointerCapture(event.pointerId);
-        draw(aFromPointer(event));
+        beginDrag(event);
       });
-      hit.addEventListener("pointerup", event => { if (event.pointerType !== "touch" && hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
-      hit.addEventListener("pointercancel", event => { if (event.pointerType !== "touch" && hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId); });
-      bindChartTouch(chart, point => draw(aFromPointer(point)));
+      const finishPointer = event => {
+        if (event.pointerType === "touch") return;
+        endDrag();
+        if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
+      };
+      hit.addEventListener("pointerup", finishPointer);
+      hit.addEventListener("pointercancel", finishPointer);
+      hit.addEventListener("lostpointercapture", event => { if (event.pointerType !== "touch") endDrag(); });
+      bindChartTouch(chart, moveDrag, beginDrag, endDrag);
 
       slider.addEventListener("input", event => draw(Number(event.target.value)));
       document.getElementById("snapButton").addEventListener("click", () => {
-        slider.value = String(aTangent);
-        draw(aTangent);
+        draw(bTangent);
       });
 
-      draw(aTangent);
+      draw(bTangent);
+
+      // Enlarge the interaction-area fit by 30%, bounded by the panel width.
+      // The title and readout cards sit outside this interaction-area budget.
+      // Width and height scale together, keeping pointer coordinates accurate.
+      function fitChartToViewport() {
+        if (window.innerWidth <= 900) {
+          chart.style.removeProperty("width");
+          return;
+        }
+        const bounds = chart.getBoundingClientRect();
+        const panelTop = chart.parentElement.getBoundingClientRect().top;
+        const statusBottom = document.getElementById("statusBox").getBoundingClientRect().bottom;
+        const overhead = statusBottom - panelTop - bounds.height;
+        const availableHeight = Math.max(180, window.innerHeight - overhead - 24);
+        const panelStyle = getComputedStyle(chart.parentElement);
+        const availableWidth = chart.parentElement.clientWidth - parseFloat(panelStyle.paddingLeft) - parseFloat(panelStyle.paddingRight);
+        const width = Math.min(availableWidth, availableHeight * W / H * 1.3);
+        if (Math.abs(bounds.width - width) > 0.5) chart.style.width = `${width}px`;
+      }
+      let layoutFrame = null;
+      function scheduleChartFit() {
+        if (layoutFrame !== null) return;
+        layoutFrame = requestAnimationFrame(() => {
+          layoutFrame = null;
+          fitChartToViewport();
+        });
+      }
+      window.addEventListener("resize", scheduleChartFit);
+      const layoutObserver = new ResizeObserver(scheduleChartFit);
+      for (const element of document.querySelectorAll("h1, .readouts, .panel-note, .controls, .legend, #statusBox")) layoutObserver.observe(element);
+      document.fonts.ready.then(scheduleChartFit);
+      scheduleChartFit();
     })();
   </script>
 </body>
