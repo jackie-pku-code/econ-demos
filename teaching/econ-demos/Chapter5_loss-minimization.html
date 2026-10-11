@@ -25,6 +25,7 @@
       --active: #355da8;
       --continue: #258b4b;
       --shutdown: #d84a43;
+      --svgfs: 1;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -74,16 +75,17 @@
       margin: 0;
       text-align: center;
       font-family: Georgia, "Times New Roman", "Songti SC", serif;
-      font-size: clamp(29px, 4vw, 50px);
-      line-height: 1.12;
-      letter-spacing: -0.02em;
+      font-size: clamp(21px, 2.5vw, 34px);
+      line-height: 1.18;
+      letter-spacing: -0.015em;
+      font-weight: 650;
     }
 
     .subtitle {
       margin: 8px 0 16px;
       text-align: center;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .price-text { color: var(--price); font-weight: 800; }
@@ -144,7 +146,7 @@
     .panel h2 {
       margin: 0 0 4px;
       text-align: center;
-      font-size: 19px;
+      font-size: 16px;
       line-height: 1.25;
     }
 
@@ -154,7 +156,7 @@
       text-align: center;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     svg {
@@ -177,10 +179,10 @@
     .annotation, .area-label {
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
     }
-    .tick-label { font-size: 12px; }
-    .axis-label { font-size: 16px; font-weight: 800; }
-    .annotation { font-size: 13px; font-weight: 750; }
-    .area-label { font-size: 14px; font-weight: 850; }
+    .tick-label { font-size: calc(12px * var(--svgfs)); }
+    .axis-label { font-size: calc(16px * var(--svgfs)); font-weight: 800; }
+    .annotation { font-size: calc(13px * var(--svgfs)); font-weight: 750; }
+    .area-label { font-size: calc(14px * var(--svgfs)); font-weight: 850; }
     .mc-path { fill: none; stroke: var(--mc); stroke-width: 5; stroke-linecap: round; }
     .atc-path { fill: none; stroke: var(--atc); stroke-width: 5; stroke-linecap: round; }
     .avc-path { fill: none; stroke: var(--avc); stroke-width: 5; stroke-linecap: round; }
@@ -201,7 +203,7 @@
     .pill-text {
       fill: #ffffff;
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
-      font-size: 11px;
+      font-size: calc(11px * var(--svgfs));
       font-weight: 800;
     }
     .callout {
@@ -214,8 +216,8 @@
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
       font-weight: 800;
     }
-    .callout-title { fill: var(--ink); font-size: 13px; }
-    .callout-line { font-size: 12px; }
+    .callout-title { fill: var(--ink); font-size: calc(13px * var(--svgfs)); }
+    .callout-line { font-size: calc(12px * var(--svgfs)); }
 
     .control-row {
       display: grid;
@@ -229,7 +231,7 @@
     }
 
     .control-row label, .control-row output {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 750;
       white-space: nowrap;
     }
@@ -289,6 +291,41 @@
       .notes { grid-template-columns: 1fr; }
     }
 
+    @media (max-width: 640px) {
+      :root { --svgfs: 3.0; }
+      h1 { font-size: 22px; }
+      .readout .value { font-size: 20px; }
+      main { padding: 16px 10px; }
+      .panel { padding: 10px 8px 6px; }
+    }
+
+    .rotate-hint { display: none; }
+    @media (max-width: 640px) and (orientation: portrait) {
+      .rotate-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0 auto 12px;
+        padding: 8px 8px 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--ink) 6%, transparent);
+        color: var(--ink);
+        font-size: 12.5px;
+      }
+      .rotate-hint button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+    }
+
     @media (prefers-reduced-motion: no-preference) {
       .price-line, .guide, .area-a, .area-b, .mc-point, .atc-point,
       .avc-point, .pill-price, .pill-atc, .pill-avc, .pill-q,
@@ -300,6 +337,10 @@
 </head>
 <body>
   <main>
+    <div class="rotate-hint" role="note">
+      <span>建议横屏预览,图表会更清晰</span>
+      <button type="button" aria-label="关闭提示" onclick="this.parentElement.remove()">×</button>
+    </div>
     <h1>Loss Minimization and the Shutdown Decision</h1>
     <p class="subtitle">上下移动鼠标调整 <span class="price-text">Pe</span>；系统同步更新 q*、成本点、<span class="area-a-text">A 区域</span>和<span class="area-b-text">B 区域</span></p>
 

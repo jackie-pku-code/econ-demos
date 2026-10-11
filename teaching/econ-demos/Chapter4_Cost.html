@@ -20,6 +20,7 @@
       --accent: #df4f92;
       --soft-blue: rgba(232, 93, 72, 0.12);
       --soft-orange: rgba(115, 87, 217, 0.12);
+      --svgfs: 1;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -64,16 +65,17 @@
       margin: 0;
       text-align: center;
       font-family: Georgia, "Times New Roman", "Songti SC", serif;
-      font-size: clamp(28px, 3.5vw, 50px);
-      line-height: 1.12;
-      letter-spacing: -0.02em;
+      font-size: clamp(21px, 2.5vw, 34px);
+      line-height: 1.18;
+      letter-spacing: -0.015em;
+      font-weight: 650;
     }
 
     .subtitle {
       margin: 8px 0 16px;
       text-align: center;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .readouts {
@@ -103,7 +105,7 @@
     }
 
     .readout .value {
-      font-size: 22px;
+      font-size: 21px;
       line-height: 1.18;
       font-weight: 750;
       font-variant-numeric: tabular-nums;
@@ -132,7 +134,7 @@
     .panel h2 {
       margin: 0 0 4px;
       text-align: center;
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1.25;
     }
 
@@ -142,7 +144,7 @@
       text-align: center;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .ac-text { color: var(--ac); font-weight: 750; }
     .mc-text { color: var(--mc); font-weight: 750; }
@@ -164,10 +166,10 @@
       fill: var(--ink);
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
     }
-    .tick-label { font-size: 12px; }
-    .axis-label { font-size: 16px; font-weight: 750; }
-    .annotation { font-size: 13px; font-weight: 700; }
-    .point-label { font-size: 12px; font-weight: 750; }
+    .tick-label { font-size: calc(12px * var(--svgfs)); }
+    .axis-label { font-size: calc(16px * var(--svgfs)); font-weight: 750; }
+    .annotation { font-size: calc(13px * var(--svgfs)); font-weight: 700; }
+    .point-label { font-size: calc(12px * var(--svgfs)); font-weight: 750; }
     .slope-card {
       fill: var(--paper);
       stroke: var(--line);
@@ -178,9 +180,9 @@
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
       font-weight: 750;
     }
-    .card-coordinate { fill: var(--ink); font-size: 12px; }
-    .card-ac { fill: var(--ac); font-size: 13px; }
-    .card-mc { fill: var(--mc); font-size: 13px; }
+    .card-coordinate { fill: var(--ink); font-size: calc(12px * var(--svgfs)); }
+    .card-ac { fill: var(--ac); font-size: calc(13px * var(--svgfs)); }
+    .card-mc { fill: var(--mc); font-size: calc(13px * var(--svgfs)); }
     .tc-path { fill: none; stroke: var(--tc); stroke-width: 5; stroke-linecap: round; }
     .curve-ghost { fill: none; stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
     .ac-path { fill: none; stroke: var(--ac); stroke-width: 5; stroke-linecap: round; }
@@ -204,7 +206,7 @@
     .pill-text {
       fill: #ffffff;
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
-      font-size: 11px;
+      font-size: calc(11px * var(--svgfs));
       font-weight: 750;
     }
     .formula-ac { fill: var(--ac); }
@@ -222,7 +224,7 @@
     }
 
     .control-row label, .control-row output {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       white-space: nowrap;
     }
@@ -260,6 +262,7 @@
       gap: 12px;
       max-width: 1120px;
       margin: 12px auto 0;
+      font-size: 13px;
     }
 
     .explain-card {
@@ -273,17 +276,52 @@
     .explain-card.mc { background: var(--soft-orange); }
     .explain-card strong { font-weight: 800; }
 
-    @media (max-width: 980px) {
+    @media (max-width: 900px) {
       main { width: min(100% - 16px, 760px); padding: 20px 14px; }
       .readouts { grid-template-columns: repeat(3, 1fr); }
       .charts { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 580px) {
+    @media (max-width: 560px) {
       .readouts { grid-template-columns: repeat(2, 1fr); }
       .control-row { grid-template-columns: 1fr auto; }
       .control-row input { grid-column: 1 / -1; grid-row: 2; }
       .explanation { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      :root { --svgfs: 2.0; }
+      h1 { font-size: 22px; }
+      .readout .value { font-size: 20px; }
+      main { padding: 16px 10px; }
+      .panel { padding: 10px 8px 6px; }
+    }
+
+    .rotate-hint { display: none; }
+    @media (max-width: 640px) and (orientation: portrait) {
+      .rotate-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0 auto 12px;
+        padding: 8px 8px 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--ink) 6%, transparent);
+        color: var(--ink);
+        font-size: 12.5px;
+      }
+      .rotate-hint button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
     }
 
     @media (prefers-reduced-motion: no-preference) {
@@ -297,6 +335,10 @@
 </head>
 <body>
   <main>
+    <div class="rotate-hint" role="note">
+      <span>建议横屏预览，图表会更清晰</span>
+      <button type="button" aria-label="关闭提示" onclick="this.parentElement.remove()">×</button>
+    </div>
     <h1>Total Cost → Marginal Cost &amp; Average Cost</h1>
     <p class="subtitle">在左图移动鼠标：<span class="ac-text">原点连线斜率生成 AC</span>，<span class="mc-text">切线斜率生成 MC</span>；右图同步描出两条成本曲线</p>
 

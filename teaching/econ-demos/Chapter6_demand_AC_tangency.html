@@ -21,6 +21,7 @@
       --profit: #2f9e44;
       --loss: #d84a43;
       --soft-demand: rgba(31, 116, 208, 0.12);
+      --svgfs: 1;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -66,16 +67,17 @@
       margin: 0;
       text-align: center;
       font-family: Georgia, "Times New Roman", "Songti SC", serif;
-      font-size: clamp(29px, 4vw, 50px);
-      line-height: 1.12;
-      letter-spacing: -0.02em;
+      font-size: clamp(21px, 2.5vw, 34px);
+      line-height: 1.18;
+      letter-spacing: -0.015em;
+      font-weight: 650;
     }
 
     .subtitle {
       margin: 8px 0 16px;
       text-align: center;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .demand-text { color: var(--demand); font-weight: 800; }
@@ -102,14 +104,14 @@
       display: block;
       margin-block-end: 4px;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
     }
 
     .readout .value {
-      font-size: 28px;
+      font-size: 21px;
       line-height: 1.18;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
@@ -132,7 +134,7 @@
     .panel h2 {
       margin: 0 0 4px;
       text-align: center;
-      font-size: 19px;
+      font-size: 16px;
       line-height: 1.25;
     }
 
@@ -141,8 +143,8 @@
       margin: 0 auto 12px;
       text-align: center;
       color: var(--muted);
-      font-size: 17px;
-      line-height: 1.65;
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     svg {
@@ -166,10 +168,10 @@
     .annotation, .point-label {
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
     }
-    .tick-label { font-size: 12px; }
-    .axis-label { font-size: 16px; font-weight: 800; }
-    .annotation { font-size: 13px; font-weight: 780; }
-    .point-label { font-size: 12px; font-weight: 800; }
+    .tick-label { font-size: calc(12px * var(--svgfs)); }
+    .axis-label { font-size: calc(16px * var(--svgfs)); font-weight: 800; }
+    .annotation { font-size: calc(13px * var(--svgfs)); font-weight: 780; }
+    .point-label { font-size: calc(12px * var(--svgfs)); font-weight: 800; }
     .demand-path { fill: none; stroke: var(--demand); stroke-width: 5; stroke-linecap: round; }
     .mr-path { fill: none; stroke: var(--mr); stroke-width: 3.2; stroke-linecap: round; stroke-dasharray: 9 6; opacity: 0.72; }
     .ac-path { fill: none; stroke: var(--ac); stroke-width: 5; stroke-linecap: round; }
@@ -191,7 +193,7 @@
     .pill-text {
       fill: #ffffff;
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
-      font-size: 11px;
+      font-size: calc(11px * var(--svgfs));
       font-weight: 800;
     }
     .status-card {
@@ -220,7 +222,7 @@
     }
 
     .controls label, .controls output {
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 750;
       white-space: nowrap;
     }
@@ -238,7 +240,7 @@
       color: var(--ink);
       background: var(--paper);
       font: inherit;
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 750;
       cursor: pointer;
       white-space: nowrap;
@@ -252,7 +254,7 @@
       gap: 8px 18px;
       margin-block-start: 11px;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .legend-item {
@@ -303,7 +305,7 @@
       border-radius: 11px;
       background: var(--soft-demand);
       border: 1px solid var(--line);
-      font-size: 16px;
+      font-size: 13px;
       line-height: 1.7;
       color: var(--muted);
     }
@@ -352,21 +354,56 @@
     @media (max-width: 560px) {
       .readouts { grid-template-columns: repeat(2, 1fr); }
       .readout { min-height: 82px; padding: 11px 12px; }
-      .readout .label { font-size: 14px; }
-      .readout .value { font-size: 26px; }
-      .panel-note { font-size: 15px; }
       .controls { grid-template-columns: 1fr 1fr; }
       .controls label { grid-column: 1 / -1; }
-      .controls label, .controls output { font-size: 15px; }
-      button { padding-inline: 10px; font-size: 14px; }
+      button { padding-inline: 10px; }
       .proof { padding: 14px; font-size: 15px; }
       .proof h2 { font-size: 18px; }
       .proof .formula { font-size: clamp(12px, 3.6vw, 18px); }
+    }
+
+    @media (max-width: 640px) {
+      :root { --svgfs: 3.0; }
+      h1 { font-size: 22px; }
+      .readout .value { font-size: 20px; }
+      main { padding: 16px 10px; }
+      .panel { padding: 10px 8px 6px; }
+    }
+
+    .rotate-hint { display: none; }
+    @media (max-width: 640px) and (orientation: portrait) {
+      .rotate-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0 auto 12px;
+        padding: 8px 8px 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--ink) 6%, transparent);
+        color: var(--ink);
+        font-size: 12.5px;
+      }
+      .rotate-hint button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
     }
   </style>
 </head>
 <body>
   <main>
+    <div class="rotate-hint" role="note">
+      <span>建议横屏预览,图表会更清晰</span>
+      <button type="button" aria-label="关闭提示" onclick="this.parentElement.remove()">×</button>
+    </div>
     <h1>Equilibrium under Monopolistic Competition</h1>
 
     <section class="readouts" aria-label="当前数值" aria-live="polite">

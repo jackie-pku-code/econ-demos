@@ -22,6 +22,7 @@
       --inelastic: #fee3df;
       --shadow: rgba(31, 48, 73, 0.09);
       --card: #fbfcfe;
+      --svgfs: 1;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -68,17 +69,17 @@
       margin: 0;
       text-align: center;
       font-family: Georgia, "Times New Roman", "Songti SC", serif;
-      font-size: clamp(30px, 4vw, 54px);
-      line-height: 1.14;
-      letter-spacing: -0.025em;
-      font-weight: 700;
+      font-size: clamp(21px, 2.5vw, 34px);
+      line-height: 1.18;
+      letter-spacing: -0.015em;
+      font-weight: 650;
     }
 
     .subtitle {
       margin: 10px 0 20px;
       text-align: center;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 13px;
     }
 
     .readouts {
@@ -101,14 +102,14 @@
       display: block;
       margin-bottom: 5px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
     .readout .value {
-      font-size: 24px;
+      font-size: 21px;
       line-height: 1.15;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
@@ -134,7 +135,7 @@
     .panel h2 {
       margin: 0 0 6px;
       text-align: center;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
     }
 
@@ -155,10 +156,10 @@
       fill: var(--ink);
       font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
     }
-    .tick-label { font-size: 13px; }
-    .axis-label { font-size: 17px; font-weight: 700; }
-    .annotation { font-size: 14px; font-weight: 650; }
-    .point-label { font-size: 13px; font-weight: 700; }
+    .tick-label { font-size: calc(13px * var(--svgfs)); }
+    .axis-label { font-size: calc(17px * var(--svgfs)); font-weight: 700; }
+    .annotation { font-size: calc(14px * var(--svgfs)); font-weight: 650; }
+    .point-label { font-size: calc(13px * var(--svgfs)); font-weight: 700; }
     .demand-path { fill: none; stroke: var(--demand); stroke-width: 5; stroke-linecap: round; }
     .tr-path { fill: none; stroke: var(--revenue); stroke-width: 5; stroke-linecap: round; }
     .guide { stroke: var(--active); stroke-width: 1.6; stroke-dasharray: 6 5; }
@@ -170,8 +171,8 @@
     .hit-area { fill: transparent; cursor: ew-resize; }
     .axis-pill { fill: var(--active); }
     .axis-pill-tr { fill: var(--revenue); }
-    .pill-text { fill: #fff; font-size: 12px; font-weight: 700; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
-    .region-label { fill: var(--muted); font-size: 13px; font-weight: 650; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
+    .pill-text { fill: #fff; font-size: calc(12px * var(--svgfs)); font-weight: 700; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
+    .region-label { fill: var(--muted); font-size: calc(13px * var(--svgfs)); font-weight: 650; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
 
     .control-row {
       display: grid;
@@ -185,7 +186,7 @@
     }
 
     .control-row label, .control-row output {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 650;
       white-space: nowrap;
     }
@@ -216,6 +217,41 @@
       .control-row input { grid-column: 1 / -1; grid-row: 2; }
     }
 
+    @media (max-width: 640px) {
+      :root { --svgfs: 1.8; }
+      h1 { font-size: 22px; }
+      .readout .value { font-size: 20px; }
+      main { padding: 16px 10px; }
+      .panel { padding: 10px 8px 6px; }
+    }
+
+    .rotate-hint { display: none; }
+    @media (max-width: 640px) and (orientation: portrait) {
+      .rotate-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0 auto 12px;
+        padding: 8px 8px 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--ink) 6%, transparent);
+        color: var(--ink);
+        font-size: 12.5px;
+      }
+      .rotate-hint button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+    }
+
     @media (prefers-reduced-motion: no-preference) {
       .active-point, .tr-point, .guide, .tr-guide, .revenue-rect, .axis-pill, .axis-pill-tr, .pill-text {
         transition: 80ms linear;
@@ -225,6 +261,10 @@
 </head>
 <body>
   <main>
+    <div class="rotate-hint" role="note">
+      <span>建议横屏预览，图表会更清晰</span>
+      <button type="button" aria-label="关闭提示" onclick="this.parentElement.remove()">×</button>
+    </div>
     <h1>Demand, Elasticity, MR, and Total Revenue</h1>
     <p class="subtitle">在左侧图中移动鼠标，观察价格、销量、边际收益和总收入如何同步变化</p>
 
