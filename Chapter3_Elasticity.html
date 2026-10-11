@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>需求曲线与总收入互动演示</title>
   <style>
     :root {
@@ -19,6 +20,28 @@
       --elastic: #dff3e1;
       --unit: #fff1bf;
       --inelastic: #fee3df;
+      --shadow: rgba(31, 48, 73, 0.09);
+      --card: #fbfcfe;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #f3f6fb;
+        --muted: #aeb9ca;
+        --line: #354158;
+        --grid: #344057;
+        --paper: #172033;
+        --page: #111827;
+        --demand: #8ede54;
+        --revenue: #ff7768;
+        --active: #79a7ff;
+        --active-soft: rgba(121, 167, 255, 0.24);
+        --elastic: #1c3a2a;
+        --unit: #463a18;
+        --inelastic: #46262a;
+        --shadow: rgba(0, 0, 0, 0.45);
+        --card: color-mix(in srgb, var(--paper) 90%, var(--page));
+      }
     }
 
     * { box-sizing: border-box; }
@@ -38,7 +61,7 @@
       background: var(--paper);
       border: 1px solid var(--line);
       border-radius: 18px;
-      box-shadow: 0 16px 50px rgba(31, 48, 73, 0.09);
+      box-shadow: 0 16px 50px var(--shadow);
     }
 
     h1 {
@@ -71,7 +94,7 @@
       padding: 11px 14px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: #fbfcfe;
+      background: var(--card);
     }
 
     .readout .label {
@@ -124,7 +147,7 @@
       touch-action: none;
     }
 
-    .frame { fill: #fff; stroke: var(--line); stroke-width: 1; }
+    .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
     .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
     .axis { stroke: var(--ink); stroke-width: 1.8; }
     .tick { stroke: var(--ink); stroke-width: 1.2; }
@@ -141,9 +164,9 @@
     .guide { stroke: var(--active); stroke-width: 1.6; stroke-dasharray: 6 5; }
     .tr-guide { stroke: var(--revenue); stroke-width: 1.6; stroke-dasharray: 6 5; }
     .revenue-rect { fill: var(--active-soft); stroke: var(--active); stroke-width: 1.5; }
-    .active-point { fill: var(--active); stroke: #fff; stroke-width: 4; }
-    .tr-point { fill: var(--revenue); stroke: #fff; stroke-width: 4; }
-    .max-point { fill: var(--ink); stroke: #fff; stroke-width: 3; }
+    .active-point { fill: var(--active); stroke: var(--paper); stroke-width: 4; }
+    .tr-point { fill: var(--revenue); stroke: var(--paper); stroke-width: 4; }
+    .max-point { fill: var(--ink); stroke: var(--paper); stroke-width: 3; }
     .hit-area { fill: transparent; cursor: ew-resize; }
     .axis-pill { fill: var(--active); }
     .axis-pill-tr { fill: var(--revenue); }
@@ -303,7 +326,7 @@
       function addArrowMarker(svg, id) {
         const defs = svgEl("defs");
         const marker = svgEl("marker", { id, markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5, orient: "auto", markerUnits: "strokeWidth" });
-        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "#172033" }));
+        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "currentColor" }));
         defs.appendChild(marker);
         svg.appendChild(defs);
       }
@@ -345,7 +368,7 @@
       addRegionLabels(trSvg);
 
       demandSvg.appendChild(svgEl("path", { class: "demand-path", d: `M${x(0)},${yP(100)} L${x(50)},${yP(0)}` }));
-      demandSvg.appendChild(svgEl("text", { class: "annotation", x: x(43), y: yP(21), fill: "#69af35" }, "D"));
+      demandSvg.appendChild(svgEl("text", { class: "annotation", x: x(43), y: yP(21), fill: "var(--demand)" }, "D"));
 
       const qs = Array.from({ length: 201 }, (_, i) => i * 0.25);
       trSvg.appendChild(svgEl("path", { class: "tr-path", d: linePath(qs, q => yTR(revenue(q))) }));
