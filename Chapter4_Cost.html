@@ -1,0 +1,688 @@
+﻿<!doctype html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Total Cost, Marginal Cost, and Average Cost</title>
+  <style>
+    :root {
+      --page: #eef3f8;
+      --paper: #ffffff;
+      --ink: #162033;
+      --muted: #637086;
+      --line: #d8e0ea;
+      --grid: #dfe6ee;
+      --tc: #159f91;
+      --ac: #e85d48;
+      --mc: #7357d9;
+      --fixed: #f2a93b;
+      --accent: #df4f92;
+      --soft-blue: rgba(232, 93, 72, 0.12);
+      --soft-orange: rgba(115, 87, 217, 0.12);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #111827;
+        --paper: #172033;
+        --ink: #f3f6fb;
+        --muted: #aeb9ca;
+        --line: #354158;
+        --grid: #344057;
+        --tc: #38d6c1;
+        --ac: #ff8066;
+        --mc: #a78bfa;
+        --fixed: #fbbf24;
+        --accent: #f472b6;
+        --soft-blue: rgba(255, 128, 102, 0.18);
+        --soft-orange: rgba(167, 139, 250, 0.18);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1500px, calc(100% - 28px));
+      margin: 18px auto;
+      padding: 24px 28px 22px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 52px rgba(20, 35, 60, 0.10);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(28px, 3.5vw, 50px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 1120px;
+      margin: 0 auto 18px;
+    }
+
+    .readout {
+      min-height: 69px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--paper) 94%, var(--page));
+    }
+
+    .readout .label {
+      display: block;
+      margin-block-end: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+
+    .readout .value {
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #tcValue { color: var(--tc); }
+    #acValue { color: var(--ac); }
+    #mcValue { color: var(--mc); }
+    #interceptValue { color: var(--accent); }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 14px 14px 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--paper) 97%, var(--page));
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .panel-note {
+      min-height: 38px;
+      margin: 0 0 2px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .ac-text { color: var(--ac); font-weight: 750; }
+    .mc-text { color: var(--mc); font-weight: 750; }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
+    .axis { stroke: var(--ink); stroke-width: 1.8; }
+    .tick { stroke: var(--ink); stroke-width: 1.1; }
+    .tick-label, .axis-label, .annotation, .point-label {
+      fill: var(--ink);
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .tick-label { font-size: 12px; }
+    .axis-label { font-size: 16px; font-weight: 750; }
+    .annotation { font-size: 13px; font-weight: 700; }
+    .point-label { font-size: 12px; font-weight: 750; }
+    .slope-card {
+      fill: var(--paper);
+      stroke: var(--line);
+      stroke-width: 1.2;
+      filter: drop-shadow(0 3px 5px rgba(20, 35, 60, 0.16));
+    }
+    .card-coordinate, .card-ac, .card-mc {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-weight: 750;
+    }
+    .card-coordinate { fill: var(--ink); font-size: 12px; }
+    .card-ac { fill: var(--ac); font-size: 13px; }
+    .card-mc { fill: var(--mc); font-size: 13px; }
+    .tc-path { fill: none; stroke: var(--tc); stroke-width: 5; stroke-linecap: round; }
+    .curve-ghost { fill: none; stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+    .ac-path { fill: none; stroke: var(--ac); stroke-width: 5; stroke-linecap: round; }
+    .mc-path { fill: none; stroke: var(--mc); stroke-width: 5; stroke-linecap: round; }
+    .ray { stroke: var(--ac); stroke-width: 2.6; }
+    .tangent { stroke: var(--mc); stroke-width: 2.8; }
+    .guide { stroke: #7182a0; stroke-width: 1.3; stroke-dasharray: 5 5; }
+    .ac-guide { stroke: var(--ac); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .mc-guide { stroke: var(--mc); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .active-point { fill: var(--tc); stroke: var(--paper); stroke-width: 4; }
+    .ac-point { fill: var(--ac); stroke: var(--paper); stroke-width: 4; }
+    .mc-point { fill: var(--mc); stroke: var(--paper); stroke-width: 4; }
+    .intercept-point { fill: var(--accent); stroke: var(--paper); stroke-width: 3; }
+    .fixed-point { fill: var(--fixed); stroke: var(--paper); stroke-width: 3; }
+    .fixed-pill { fill: var(--fixed); }
+    .hit-area { fill: transparent; cursor: ew-resize; }
+    .pill-ac { fill: var(--ac); }
+    .pill-mc { fill: var(--mc); }
+    .pill-q { fill: #52627d; }
+    .pill-intercept { fill: var(--accent); }
+    .pill-text {
+      fill: #ffffff;
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .formula-ac { fill: var(--ac); }
+    .formula-mc { fill: var(--mc); }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 760px) auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 940px;
+      margin: 14px auto 0;
+      padding-block-start: 14px;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .control-row label, .control-row output {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--tc);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+      margin-block-start: 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 20px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .explanation {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 1120px;
+      margin: 12px auto 0;
+    }
+
+    .explain-card {
+      padding: 11px 13px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .explain-card.ac { background: var(--soft-blue); }
+    .explain-card.mc { background: var(--soft-orange); }
+    .explain-card strong { font-weight: 800; }
+
+    @media (max-width: 980px) {
+      main { width: min(100% - 16px, 760px); padding: 20px 14px; }
+      .readouts { grid-template-columns: repeat(3, 1fr); }
+      .charts { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 580px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .control-row { grid-template-columns: 1fr auto; }
+      .control-row input { grid-column: 1 / -1; grid-row: 2; }
+      .explanation { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .active-point, .ac-point, .mc-point, .ray, .tangent, .guide,
+      .ac-guide, .mc-guide, .pill-ac, .pill-mc, .pill-q,
+      .pill-intercept, .pill-text {
+        transition: 70ms linear;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Total Cost → Marginal Cost &amp; Average Cost</h1>
+    <p class="subtitle">在左图移动鼠标：<span class="ac-text">原点连线斜率生成 AC</span>，<span class="mc-text">切线斜率生成 MC</span>；右图同步描出两条成本曲线</p>
+
+    <section class="readouts" aria-label="当前数值" aria-live="polite">
+      <div class="readout"><span class="label">产量 Q</span><span class="value" id="qValue">18.0</span></div>
+      <div class="readout"><span class="label">总成本 TC</span><span class="value" id="tcValue">—</span></div>
+      <div class="readout"><span class="label">平均成本 AC = TC/Q</span><span class="value" id="acValue">—</span></div>
+      <div class="readout"><span class="label">边际成本 MC = dTC/dQ</span><span class="value" id="mcValue">—</span></div>
+      <div class="readout"><span class="label">切线纵轴截距</span><span class="value" id="interceptValue">—</span></div>
+    </section>
+
+    <section class="charts">
+      <div class="panel">
+        <h2>总成本曲线 TC(Q)</h2>
+        <p class="panel-note"><span class="ac-text">原点到当前点的连线：斜率 = AC</span>；<span class="mc-text">当前点的切线：斜率 = MC</span></p>
+        <svg id="tcChart" viewBox="0 0 680 500" role="img" aria-labelledby="tcTitle tcDesc">
+          <title id="tcTitle">总成本及其平均成本线和边际成本切线</title>
+          <desc id="tcDesc">移动鼠标改变产量。总成本曲线上的当前点、原点连线、切线及其纵轴截距同步变化。</desc>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <h2>由斜率描出的 AC 与 MC</h2>
+        <p class="panel-note">随着 Q 增加，右图从左向右逐步描出 AC 与 MC；横向虚线在纵轴上标出当前数值</p>
+        <svg id="costChart" viewBox="0 0 680 500" role="img" aria-labelledby="costTitle costDesc">
+          <title id="costTitle">平均成本与边际成本曲线</title>
+          <desc id="costDesc">平均成本和边际成本随产量变化形成U形曲线，并显示当前产量对应的两个数值。</desc>
+        </svg>
+      </div>
+    </section>
+
+    <div class="control-row">
+      <label for="quantitySlider">精确选择产量</label>
+      <input id="quantitySlider" type="range" min="1" max="40" step="0.1" value="18" aria-label="产量 Q">
+      <output id="sliderOutput" for="quantitySlider">Q = 18.0</output>
+    </div>
+
+    <div class="legend" aria-label="图例">
+      <span class="legend-item"><span class="swatch" style="background:var(--tc)"></span>TC(Q)</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--ac)"></span>AC = TC/Q（原点连线斜率）</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--mc)"></span>MC = dTC/dQ（切线斜率）</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>切线的纵轴截距</span>
+    </div>
+
+    <section class="explanation">
+      <div class="explain-card ac"><strong>Average cost：</strong>原点与 TC 曲线上当前点的连线必定经过原点，因此纵轴截距为 0；连线斜率就是当前 AC。</div>
+      <div class="explain-card mc"><strong>Marginal cost：</strong>TC 曲线上当前点的切线斜率就是 MC；切线延伸到纵轴形成的截距随产量变化，并在左图单独标出。</div>
+    </section>
+  </main>
+
+  <script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 680;
+      const H = 500;
+      const M = { left: 82, right: 35, top: 30, bottom: 64 };
+      const PW = W - M.left - M.right;
+      const PH = H - M.top - M.bottom;
+      const qMin = 1;
+      const qMax = 40;
+      const tcMax = 940;
+      const costMax = 150;
+
+      // Illustrative smooth total-cost function:
+      // TC(Q) = FC + aQ - bQ² + cQ³.
+      const FC = 120;
+      const a = 18;
+      const b = 0.8;
+      const c = 0.02;
+
+      const totalCost = q => FC + a * q - b * q * q + c * q * q * q;
+      const averageCost = q => totalCost(q) / q;
+      const marginalCost = q => a - 2 * b * q + 3 * c * q * q;
+      const tangentIntercept = q => totalCost(q) - marginalCost(q) * q;
+
+      const tcSvg = document.getElementById("tcChart");
+      const costSvg = document.getElementById("costChart");
+      const slider = document.getElementById("quantitySlider");
+      const fmt1 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+      const x = q => M.left + q / qMax * PW;
+      const yTC = value => M.top + (tcMax - value) / tcMax * PH;
+      const yCost = value => M.top + (costMax - value) / costMax * PH;
+
+      function svgEl(name, attrs = {}, text = "") {
+        const el = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function pathFor(qStart, qEnd, step, yFn) {
+        const pts = [];
+        for (let q = qStart; q <= qEnd + 0.0001; q += step) {
+          pts.push(`${pts.length ? "L" : "M"}${x(q).toFixed(2)},${yFn(q).toFixed(2)}`);
+        }
+        return pts.join(" ");
+      }
+
+      function addArrowMarker(svg, id) {
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", {
+          id, markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5,
+          orient: "auto", markerUnits: "strokeWidth"
+        });
+        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "currentColor" }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+      }
+
+      function drawBase(svg, yTicks, yScale, yLabel, markerId) {
+        addArrowMarker(svg, markerId);
+        svg.appendChild(svgEl("rect", { class: "frame", x: M.left, y: M.top, width: PW, height: PH }));
+
+        for (const q of [0, 10, 20, 30, 40]) {
+          const xx = x(q);
+          if (q > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: xx, y1: M.top, x2: xx, y2: M.top + PH }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: xx, y1: M.top + PH, x2: xx, y2: M.top + PH + 6 }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: xx, y: M.top + PH + 24, "text-anchor": "middle" }, String(q)));
+        }
+
+        for (const value of yTicks) {
+          const yy = yScale(value);
+          if (value > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: M.left, y1: yy, x2: M.left + PW, y2: yy }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: M.left - 6, y1: yy, x2: M.left, y2: yy }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: M.left - 11, y: yy + 4, "text-anchor": "end" }, String(value)));
+        }
+
+        svg.appendChild(svgEl("line", {
+          class: "axis", x1: M.left, y1: M.top + PH, x2: M.left + PW + 15,
+          y2: M.top + PH, "marker-end": `url(#${markerId})`
+        }));
+        svg.appendChild(svgEl("line", {
+          class: "axis", x1: M.left, y1: M.top + PH, x2: M.left,
+          y2: M.top - 14, "marker-end": `url(#${markerId})`
+        }));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left + PW + 22, y: M.top + PH + 6 }, "Q"));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left - 8, y: M.top - 17, "text-anchor": "end" }, yLabel));
+      }
+
+      drawBase(tcSvg, [0, 200, 400, 600, 800], yTC, "TC(Q)", "arrow-tc");
+      drawBase(costSvg, [0, 30, 60, 90, 120, 150], yCost, "AC, MC", "arrow-cost");
+
+      const tcCurve = svgEl("path", { class: "tc-path", d: pathFor(0, qMax, 0.2, q => yTC(totalCost(q))) });
+      tcSvg.appendChild(tcCurve);
+      tcSvg.appendChild(svgEl("circle", { class: "fixed-point", cx: x(0), cy: yTC(FC), r: 5 }));
+      tcSvg.appendChild(svgEl("rect", {
+        class: "fixed-pill", x: M.left + 14, y: M.top + 14, width: 142, height: 27, rx: 7
+      }));
+      tcSvg.appendChild(svgEl("text", {
+        class: "pill-text", x: M.left + 85, y: M.top + 32, "text-anchor": "middle"
+      }, `TC(0) = FC = ${FC}`));
+
+      const fullAcPath = pathFor(qMin, qMax, 0.15, q => yCost(Math.min(costMax, averageCost(q))));
+      const fullMcPath = pathFor(0, qMax, 0.15, q => yCost(marginalCost(q)));
+      costSvg.appendChild(svgEl("path", { class: "curve-ghost", d: fullAcPath }));
+      costSvg.appendChild(svgEl("path", { class: "curve-ghost", d: fullMcPath }));
+
+      const acTrace = svgEl("path", { class: "ac-path" });
+      const mcTrace = svgEl("path", { class: "mc-path" });
+      costSvg.appendChild(acTrace);
+      costSvg.appendChild(mcTrace);
+
+      const originRay = svgEl("line", { class: "ray" });
+      const tangent = svgEl("line", { class: "tangent" });
+      const tcVertical = svgEl("line", { class: "guide" });
+      const tcPoint = svgEl("circle", { class: "active-point", r: 8 });
+      const slopeCard = svgEl("rect", { class: "slope-card", rx: 9, width: 174, height: 62 });
+      const coordinateLabel = svgEl("text", { class: "card-coordinate" });
+      const acSlopeLabel = svgEl("text", { class: "card-ac" });
+      const mcSlopeLabel = svgEl("text", { class: "card-mc" });
+      const interceptPoint = svgEl("circle", { class: "intercept-point", r: 6 });
+      const interceptLabel = svgEl("text", { class: "point-label", fill: "var(--accent)" });
+      const leftQPill = svgEl("rect", { class: "pill-q", rx: 6, width: 58, height: 23 });
+      const leftQText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      for (const el of [
+        originRay, tangent, tcVertical, interceptPoint, interceptLabel, leftQPill, leftQText,
+        slopeCard, coordinateLabel, acSlopeLabel, mcSlopeLabel, tcPoint
+      ]) {
+        tcSvg.appendChild(el);
+      }
+
+      const costVertical = svgEl("line", { class: "guide" });
+      const acHorizontal = svgEl("line", { class: "ac-guide" });
+      const mcHorizontal = svgEl("line", { class: "mc-guide" });
+      const acPoint = svgEl("circle", { class: "ac-point", r: 8 });
+      const mcPoint = svgEl("circle", { class: "mc-point", r: 8 });
+      const rightQPill = svgEl("rect", { class: "pill-q", rx: 6, width: 58, height: 23 });
+      const rightQText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const acPill = svgEl("rect", { class: "pill-ac", rx: 6, width: 66, height: 23 });
+      const acText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const mcPill = svgEl("rect", { class: "pill-mc", rx: 6, width: 66, height: 23 });
+      const mcText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const acLabel = svgEl("text", { class: "point-label formula-ac" });
+      const mcLabel = svgEl("text", { class: "point-label formula-mc" });
+      for (const el of [
+        costVertical, acHorizontal, mcHorizontal, rightQPill, rightQText,
+        acPill, acText, mcPill, mcText, acPoint, mcPoint, acLabel, mcLabel
+      ]) costSvg.appendChild(el);
+
+      function clipLineToChart(slope, intercept) {
+        const candidates = [];
+        const atQ0 = intercept;
+        const atQMax = slope * qMax + intercept;
+        if (atQ0 >= 0 && atQ0 <= tcMax) candidates.push([0, atQ0]);
+        if (atQMax >= 0 && atQMax <= tcMax) candidates.push([qMax, atQMax]);
+        if (Math.abs(slope) > 0.00001) {
+          for (const yy of [0, tcMax]) {
+            const q = (yy - intercept) / slope;
+            if (q >= 0 && q <= qMax) candidates.push([q, yy]);
+          }
+        }
+        const unique = [];
+        for (const point of candidates) {
+          if (!unique.some(other => Math.abs(other[0] - point[0]) < 0.001 && Math.abs(other[1] - point[1]) < 0.001)) {
+            unique.push(point);
+          }
+        }
+        return unique.slice(0, 2);
+      }
+
+      function update(rawQ) {
+        const q = Math.max(qMin, Math.min(qMax, Number(rawQ)));
+        const tc = totalCost(q);
+        const ac = averageCost(q);
+        const mc = marginalCost(q);
+        const intercept = tangentIntercept(q);
+        const xx = x(q);
+        const tcY = yTC(tc);
+        const acY = yCost(Math.min(costMax, ac));
+        const mcY = yCost(mc);
+        const baseY = M.top + PH;
+
+        originRay.setAttribute("x1", x(0));
+        originRay.setAttribute("y1", yTC(0));
+        originRay.setAttribute("x2", xx);
+        originRay.setAttribute("y2", tcY);
+
+        const tangentEnds = clipLineToChart(mc, intercept);
+        if (tangentEnds.length === 2) {
+          tangent.setAttribute("x1", x(tangentEnds[0][0]));
+          tangent.setAttribute("y1", yTC(tangentEnds[0][1]));
+          tangent.setAttribute("x2", x(tangentEnds[1][0]));
+          tangent.setAttribute("y2", yTC(tangentEnds[1][1]));
+        }
+
+        for (const [el, attrs] of [
+          [tcVertical, { x1: xx, y1: tcY, x2: xx, y2: baseY }],
+          [tcPoint, { cx: xx, cy: tcY }],
+          [costVertical, { x1: xx, y1: M.top, x2: xx, y2: baseY }],
+          [acHorizontal, { x1: M.left, y1: acY, x2: xx, y2: acY }],
+          [mcHorizontal, { x1: M.left, y1: mcY, x2: xx, y2: mcY }],
+          [acPoint, { cx: xx, cy: acY }],
+          [mcPoint, { cx: xx, cy: mcY }]
+        ]) {
+          for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        }
+
+        const interceptVisible = intercept >= 0 && intercept <= tcMax;
+        interceptPoint.style.display = interceptVisible ? "" : "none";
+        interceptLabel.style.display = interceptVisible ? "" : "none";
+        if (interceptVisible) {
+          interceptPoint.setAttribute("cx", x(0));
+          interceptPoint.setAttribute("cy", yTC(intercept));
+          interceptLabel.setAttribute("x", x(0) + 10);
+          interceptLabel.setAttribute("y", yTC(intercept) + (intercept > 820 ? 18 : -10));
+          interceptLabel.textContent = `切线截距 = ${fmt1.format(intercept)}`;
+        }
+
+        const cardWidth = 174;
+        const cardHeight = 62;
+        let cardX = xx + 14;
+        if (cardX + cardWidth > M.left + PW - 4) cardX = xx - cardWidth - 14;
+        let cardY = tcY - cardHeight - 14;
+        if (cardY < M.top + 5) cardY = tcY + 14;
+        if (cardY + cardHeight > M.top + PH - 5) cardY = M.top + PH - cardHeight - 5;
+
+        slopeCard.setAttribute("x", cardX);
+        slopeCard.setAttribute("y", cardY);
+        coordinateLabel.setAttribute("x", cardX + 11);
+        coordinateLabel.setAttribute("y", cardY + 21);
+        coordinateLabel.textContent = `(Q, TC) = (${fmt1.format(q)}, ${fmt1.format(tc)})`;
+        acSlopeLabel.setAttribute("x", cardX + 11);
+        acSlopeLabel.setAttribute("y", cardY + 47);
+        acSlopeLabel.textContent = `AC = ${fmt1.format(ac)}`;
+        mcSlopeLabel.setAttribute("x", cardX + 92);
+        mcSlopeLabel.setAttribute("y", cardY + 47);
+        mcSlopeLabel.textContent = `MC = ${fmt1.format(mc)}`;
+
+        acLabel.setAttribute("x", xx + (q > 32 ? -12 : 12));
+        acLabel.setAttribute("y", acY - 12);
+        acLabel.setAttribute("text-anchor", q > 32 ? "end" : "start");
+        acLabel.textContent = "AC";
+        mcLabel.setAttribute("x", xx + (q > 32 ? -12 : 12));
+        mcLabel.setAttribute("y", mcY + (Math.abs(mcY - acY) < 28 ? 25 : -12));
+        mcLabel.setAttribute("text-anchor", q > 32 ? "end" : "start");
+        mcLabel.textContent = "MC";
+
+        leftQPill.setAttribute("x", xx - 29);
+        leftQPill.setAttribute("y", baseY + 7);
+        leftQText.setAttribute("x", xx);
+        leftQText.setAttribute("y", baseY + 23);
+        leftQText.textContent = fmt1.format(q);
+        rightQPill.setAttribute("x", xx - 29);
+        rightQPill.setAttribute("y", baseY + 7);
+        rightQText.setAttribute("x", xx);
+        rightQText.setAttribute("y", baseY + 23);
+        rightQText.textContent = fmt1.format(q);
+
+        acPill.setAttribute("x", M.left - 72);
+        acPill.setAttribute("y", acY - 11.5);
+        acText.setAttribute("x", M.left - 39);
+        acText.setAttribute("y", acY + 4);
+        acText.textContent = `AC ${fmt1.format(ac)}`;
+        mcPill.setAttribute("x", M.left - 72);
+        mcPill.setAttribute("y", mcY - 11.5);
+        mcText.setAttribute("x", M.left - 39);
+        mcText.setAttribute("y", mcY + 4);
+        mcText.textContent = `MC ${fmt1.format(mc)}`;
+
+        acTrace.setAttribute("d", pathFor(qMin, q, 0.12, value => yCost(Math.min(costMax, averageCost(value)))));
+        mcTrace.setAttribute("d", pathFor(0, q, 0.12, value => yCost(marginalCost(value))));
+
+        document.getElementById("qValue").textContent = fmt1.format(q);
+        document.getElementById("tcValue").textContent = fmt1.format(tc);
+        document.getElementById("acValue").textContent = fmt1.format(ac);
+        document.getElementById("mcValue").textContent = fmt1.format(mc);
+        document.getElementById("interceptValue").textContent = fmt1.format(intercept);
+        document.getElementById("sliderOutput").textContent = `Q = ${fmt1.format(q)}`;
+        slider.value = q.toFixed(1);
+      }
+
+      const hit = svgEl("rect", {
+        class: "hit-area", x: M.left - 8, y: M.top - 8,
+        width: PW + 16, height: PH + 16, "aria-label": "移动鼠标选择产量"
+      });
+      tcSvg.appendChild(hit);
+
+      function qFromPointer(event) {
+        const bounds = tcSvg.getBoundingClientRect();
+        const svgX = (event.clientX - bounds.left) / bounds.width * W;
+        return (svgX - M.left) / PW * qMax;
+      }
+
+      hit.addEventListener("pointermove", event => update(qFromPointer(event)));
+      hit.addEventListener("pointerdown", event => {
+        hit.setPointerCapture(event.pointerId);
+        update(qFromPointer(event));
+      });
+      hit.addEventListener("pointerup", event => {
+        if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
+      });
+      slider.addEventListener("input", event => update(event.target.value));
+
+      update(18);
+    })();
+  </script>
+</body>
+</html>

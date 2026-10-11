@@ -1,0 +1,536 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>需求曲线与AC切线：切点 ≡ MR=MC 定理</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(160deg, #0f0c29 0%, #24243e 60%, #302b63 100%);
+  color: #e0e0ff;
+  min-height: 100vh;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+h1 {
+  font-size: 1.22em;
+  color: #b0c8ff;
+  margin-bottom: 4px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+.subtitle {
+  font-size: 0.82em;
+  color: #6a7a9a;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.main {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+canvas {
+  border-radius: 12px;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.65);
+  display: block;
+}
+.panel {
+  background: rgba(18, 20, 48, 0.88);
+  border: 1px solid rgba(120,140,210,0.18);
+  border-radius: 13px;
+  padding: 18px 16px;
+  width: 268px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+/* Status box */
+.status-box {
+  text-align: center;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 1.05em;
+  font-weight: bold;
+  margin-bottom: 14px;
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+.s-profit { background: rgba(78,204,163,0.18); color: #4ecca3; border: 1px solid rgba(78,204,163,0.4); }
+.s-zero   { background: rgba(255,215,0,0.14);  color: #ffd700; border: 1px solid rgba(255,215,0,0.45); animation: glow 1.8s ease-in-out infinite; }
+.s-loss   { background: rgba(255,80,80,0.18);  color: #ff6b6b; border: 1px solid rgba(255,80,80,0.4); }
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 4px rgba(255,215,0,0.3); }
+  50%      { box-shadow: 0 0 16px rgba(255,215,0,0.7); }
+}
+/* Slider */
+.slider-wrap { margin: 10px 0 6px; }
+.slider-lbl {
+  display: flex; justify-content: space-between;
+  font-size: 0.8em; color: #8a9ab8; margin-bottom: 5px;
+}
+input[type=range] {
+  width: 100%; height: 6px; border-radius: 3px;
+  background: linear-gradient(to right, #4fc3f7 0%, #ffd700 46%, #ff6b6b 100%);
+  -webkit-appearance: none; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%;
+  background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.45); cursor: pointer;
+}
+.eq-line {
+  text-align: center; font-size: 0.78em; color: #7a8aaa;
+  margin-bottom: 10px; background: rgba(0,0,0,0.2);
+  border-radius: 6px; padding: 5px 8px;
+}
+hr { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 10px 0; }
+/* Data grid */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cell {
+  background: rgba(0,0,0,0.28); border-radius: 7px; padding: 7px 9px;
+}
+.cell-lbl { font-size: 0.68em; color: #6a7a9a; margin-bottom: 2px; }
+.cell-val { font-weight: bold; font-size: 0.95em; }
+.c-gold   { color: #ffd700; }
+.c-blue   { color: #64b5f6; }
+.c-green  { color: #4ecca3; }
+.c-orange { color: #ffb347; }
+.c-red    { color: #ff6b6b; }
+/* Alert */
+.alert-box {
+  min-height: 22px; margin-top: 9px; text-align: center;
+  font-size: 0.82em; font-weight: bold; letter-spacing: 0.2px;
+  color: #ffd700;
+}
+/* Proof box */
+.proof {
+  background: rgba(0,0,0,0.32);
+  border: 1px solid rgba(79,195,247,0.22);
+  border-radius: 8px; padding: 12px 13px; margin-top: 11px;
+  font-size: 0.76em; color: #b8c8e0; line-height: 1.9;
+}
+.proof strong { color: #4fc3f7; }
+/* Legend */
+.legend { margin-top: 13px; font-size: 0.77em; color: #8a9ab8; }
+.leg-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.leg-solid { width: 26px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.leg-dash  { width: 26px; height: 0; border-top: 2.5px dashed; flex-shrink: 0; }
+/* Snap button */
+.snap-btn {
+  display: block; width: 100%; margin: 8px 0 0;
+  padding: 7px 0; border-radius: 7px; border: none;
+  background: rgba(255,215,0,0.13); color: #ffd700;
+  font-size: 0.82em; font-weight: bold; cursor: pointer;
+  border: 1px solid rgba(255,215,0,0.3); transition: background 0.2s;
+}
+.snap-btn:hover { background: rgba(255,215,0,0.25); }
+</style>
+</head>
+<body>
+
+<h1>需求曲线与 AC 切线：切点 ≡ MR = MC（同一条垂线）</h1>
+<p class="subtitle">
+  拖动滑块上下移动需求曲线 D，切线时观察切点与 MR=MC 交点落在同一垂线上
+</p>
+
+<div class="main">
+  <canvas id="c" width="590" height="500"></canvas>
+
+  <div class="panel">
+    <div id="stBox" class="status-box s-zero">⭐ 零利润（长期均衡）</div>
+
+    <div class="slider-wrap">
+      <div class="slider-lbl">
+        <span>D 上移 ←</span>
+        <span>a = <b id="aNum">16.0</b></span>
+        <span>→ D 下移</span>
+      </div>
+      <input type="range" id="sl" min="10" max="25" step="0.05" value="16">
+    </div>
+
+    <button class="snap-btn" onclick="snapTangent()">⭐ 跳到切线位置（a = 16）</button>
+
+    <div class="eq-line" style="margin-top:9px;">
+      D: P = <span id="eq1">16.0</span> − 2Q &nbsp;│&nbsp; MR: P = <span id="eq2">16.0</span> − 4Q
+    </div>
+
+    <hr>
+    <div class="grid2">
+      <div class="cell"><div class="cell-lbl">最优产量 Q*</div><div class="cell-val c-gold" id="v1">2.00</div></div>
+      <div class="cell"><div class="cell-lbl">均衡价格 P*</div><div class="cell-val c-blue" id="v2">12.00</div></div>
+      <div class="cell"><div class="cell-lbl">平均成本 AC*</div><div class="cell-val c-green" id="v3">12.00</div></div>
+      <div class="cell"><div class="cell-lbl">利润 π</div><div class="cell-val c-gold" id="v4">0.00</div></div>
+      <div class="cell"><div class="cell-lbl">MR at Q*</div><div class="cell-val c-orange" id="v5">8.00</div></div>
+      <div class="cell"><div class="cell-lbl">MC at Q*</div><div class="cell-val c-red" id="v6">8.00</div></div>
+    </div>
+
+    <div id="altBox" class="alert-box">✅ 切点 与 MR=MC 交点在同一垂线！</div>
+
+    <div class="proof">
+      <strong>📐 数学证明（为何一定成立）</strong><br>
+      切线条件：<br>
+      &nbsp;① P(Q*) = AC(Q*)&nbsp;&nbsp;&nbsp;（等高）<br>
+      &nbsp;② P′(Q*) = AC′(Q*)&nbsp;（等斜率）<br><br>
+      ∵ MR(Q*) = P + Q · P′<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= AC + Q · AC′ = MC(Q*)<br><br>
+      ∴ 切点处恒有 <strong>MR = MC ✓</strong>
+    </div>
+
+    <div class="legend">
+      <div class="leg-row"><div class="leg-solid" style="background:#4fc3f7"></div>需求曲线 D</div>
+      <div class="leg-row"><div class="leg-dash" style="border-color:rgba(79,195,247,0.65)"></div>边际收益 MR</div>
+      <div class="leg-row"><div class="leg-solid" style="background:#4ecca3"></div>平均成本 AC</div>
+      <div class="leg-row"><div class="leg-solid" style="background:#ffb347"></div>边际成本 MC</div>
+      <div class="leg-row"><div class="leg-dash" style="border-color:#ffd700; border-width:2.5px"></div>Q* 垂线（切时变金色）</div>
+    </div>
+  </div>
+</div>
+
+<script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+// ─── Canvas setup ────────────────────────────────────────────
+const cv = document.getElementById('c');
+const g  = cv.getContext('2d');
+
+const ML=62, MT=38, MRG=24, MB=50;
+const CW = cv.width  - ML - MRG;
+const CH = cv.height - MT - MB;
+const QX = 7.2, PY = 31;
+
+const px = Q => ML + (Q/QX)*CW;
+const py = P => MT + (1 - P/PY)*CH;
+
+// ─── Economic functions ───────────────────────────────────────
+// TC = Q³ − 6Q² + 20Q
+// AC = Q² − 6Q + 20   (min at Q=3, AC=11)
+// MC = 3Q² − 12Q + 20 (= AC at Q=3; min at Q=2, MC=8)
+const AC_fn = Q => Q*Q - 6*Q + 20;
+const MC_fn = Q => 3*Q*Q - 12*Q + 20;
+const D_fn  = (Q, a) => a - 2*Q;
+const MR_fn = (Q, a) => a - 4*Q;
+
+// MR = MC:  a − 4Q = 3Q² − 12Q + 20
+//           3Q² − 8Q + (20−a) = 0
+//           Q = (8 + √(12a−176)) / 6   [larger root = profit-max]
+function optQ(a) {
+  const disc = 12*a - 176;
+  if (disc < 0) return null;
+  return (8 + Math.sqrt(disc)) / 6;
+}
+
+// D = AC:  a − 2Q = Q² − 6Q + 20
+//          Q² − 4Q + (20−a) = 0
+//          Q = 2 ± √(a−16)
+function dacIntersections(a) {
+  const d = a - 16;
+  if (d < 0) return [];
+  if (d < 1e-4) return [2];  // tangency
+  const s = Math.sqrt(d);
+  return [2-s, 2+s].filter(q => q >= 0 && q <= QX);
+}
+
+// ─── Drawing helpers ─────────────────────────────────────────
+function drawCurve(fn, color, dash, lw, qLo, qHi) {
+  g.save();
+  g.beginPath();
+  g.strokeStyle = color;
+  g.lineWidth   = lw || 2.5;
+  g.setLineDash(dash || []);
+  let first = true;
+  const N = 480;
+  for (let i = 0; i <= N; i++) {
+    const Q = qLo + (i/N)*(qHi - qLo);
+    const P = fn(Q);
+    if (P > PY+3 || P < -6) { first = true; continue; }
+    const x = px(Q), y = py(Math.min(Math.max(P, -5), PY+2));
+    first ? (g.moveTo(x,y), first=false) : g.lineTo(x,y);
+  }
+  g.stroke();
+  g.restore();
+}
+
+function dot(Q, P, r, fill, stroke, lw) {
+  if (P < -3 || P > PY+2) return;
+  g.save();
+  g.beginPath();
+  g.arc(px(Q), py(P), r, 0, Math.PI*2);
+  g.fillStyle = fill;
+  g.fill();
+  if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw||2; g.stroke(); }
+  g.restore();
+}
+
+function label(txt, Q, P, color, dx, dy, bold, sz) {
+  if (P < -4 || P > PY+3) return;
+  g.save();
+  g.fillStyle = color;
+  g.font = (bold?'bold ':'')+((sz||12)+'px Segoe UI');
+  g.fillText(txt, px(Q)+(dx||0), py(P)+(dy||0));
+  g.restore();
+}
+
+function vline(Q, color, dash, lw, yTop, yBot) {
+  g.save();
+  g.beginPath();
+  g.strokeStyle = color;
+  g.lineWidth   = lw || 1.5;
+  g.setLineDash(dash || [6,4]);
+  g.moveTo(px(Q), yBot !== undefined ? yBot : MT+CH);
+  g.lineTo(px(Q), yTop);
+  g.stroke();
+  g.restore();
+}
+
+function hline(P, x0, x1, color, dash) {
+  if (P < 0 || P > PY) return;
+  g.save();
+  g.beginPath();
+  g.strokeStyle = color;
+  g.lineWidth   = 1;
+  g.setLineDash(dash || [3,3]);
+  g.moveTo(x0, py(P));
+  g.lineTo(x1, py(P));
+  g.stroke();
+  g.restore();
+}
+
+// ─── Main draw ───────────────────────────────────────────────
+function draw(a) {
+  // Background
+  g.fillStyle = '#0d1117';
+  g.fillRect(0, 0, cv.width, cv.height);
+
+  // Subtle grid
+  g.save();
+  g.strokeStyle = 'rgba(255,255,255,0.033)';
+  g.lineWidth = 1;
+  for (let q = 0; q <= Math.ceil(QX); q++) {
+    g.beginPath(); g.moveTo(px(q), MT); g.lineTo(px(q), MT+CH); g.stroke();
+  }
+  for (let p = 0; p <= PY; p += 5) {
+    g.beginPath(); g.moveTo(ML, py(p)); g.lineTo(ML+CW, py(p)); g.stroke();
+  }
+  g.restore();
+
+  const Qs   = optQ(a);
+  const tang = Math.abs(a - 16) < 0.25;
+  const dacs = dacIntersections(a);
+
+  // ── Profit/loss rectangle ──
+  if (Qs && Qs > 0.1 && Qs < QX) {
+    const Pv  = D_fn(Qs, a);
+    const ACv = AC_fn(Qs);
+    if (Pv > 0 && Math.abs(Pv - ACv) > 0.08) {
+      const topP = Math.max(Pv, ACv);
+      const botP = Math.min(Pv, ACv);
+      const isP  = Pv > ACv;
+      g.save();
+      g.fillStyle   = isP ? 'rgba(78,204,163,0.14)' : 'rgba(255,90,90,0.14)';
+      g.strokeStyle = isP ? 'rgba(78,204,163,0.35)' : 'rgba(255,90,90,0.35)';
+      g.lineWidth = 1; g.setLineDash([]);
+      g.beginPath();
+      g.rect(ML, py(topP), px(Qs)-ML, py(botP)-py(topP));
+      g.fill(); g.stroke();
+      g.restore();
+      // π label inside rectangle
+      const midQ = Qs/2, midP = (topP+botP)/2;
+      if (Math.abs(topP-botP) > 1.5) {
+        g.save();
+        g.fillStyle = isP ? 'rgba(78,204,163,0.7)' : 'rgba(255,107,107,0.7)';
+        g.font = 'bold 12px Segoe UI';
+        const lbl = isP ? 'π > 0' : 'π < 0';
+        g.fillText(lbl, px(midQ)-12, py(midP)+5);
+        g.restore();
+      }
+    }
+  }
+
+  // ── Axes ──
+  g.save();
+  g.strokeStyle = 'rgba(200,215,235,0.55)';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(ML, MT); g.lineTo(ML, MT+CH); g.lineTo(ML+CW, MT+CH);
+  g.stroke();
+  // Arrow heads
+  g.fillStyle = 'rgba(200,215,235,0.55)';
+  g.beginPath(); g.moveTo(ML,MT-6); g.lineTo(ML-4,MT+9); g.lineTo(ML+4,MT+9); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(ML+CW+6,MT+CH); g.lineTo(ML+CW-8,MT+CH-4); g.lineTo(ML+CW-8,MT+CH+4); g.closePath(); g.fill();
+  g.restore();
+
+  // Tick labels
+  g.save();
+  g.fillStyle = '#7888a8';
+  g.font = '11px Segoe UI';
+  for (let q = 0; q <= Math.floor(QX); q++) g.fillText(q, px(q)-4, MT+CH+18);
+  for (let p = 0; p <= PY-1; p += 5)      g.fillText(p, ML-34, py(p)+4);
+  g.restore();
+  // Axis labels
+  g.save();
+  g.fillStyle = '#aabbcc'; g.font = 'bold 14px Segoe UI';
+  g.fillText('P', ML-44, MT+8);
+  g.fillText('Q', ML+CW+10, MT+CH+6);
+  g.restore();
+
+  // ── AC=MC marker (AC minimum at Q=3, P=11) ──
+  dot(3, 11, 4, '#555', '#777', 1.5);
+  g.save(); g.fillStyle='#556'; g.font='10px Segoe UI';
+  g.fillText('AC_min=11', px(3)+6, py(11)-4); g.restore();
+
+  // ── Curves ──
+  drawCurve(Q => AC_fn(Q), '#4ecca3', [], 2.6, 0.1, QX);
+  drawCurve(Q => MC_fn(Q), '#ffb347', [], 2.6, 0.1, QX);
+  drawCurve(Q => D_fn(Q,a),  '#4fc3f7', [], 2.8, 0, QX);
+  drawCurve(Q => MR_fn(Q,a), 'rgba(79,195,247,0.68)', [9,5], 2, 0, QX);
+
+  // ── Curve labels ──
+  const acQ = 6.0, acP = AC_fn(acQ);
+  if (acP < PY) label('AC', acQ, acP, '#4ecca3', 5, 4, true, 13);
+  const mcQ = 5.5, mcP = MC_fn(mcQ);
+  if (mcP < PY) label('MC', mcQ, mcP, '#ffb347', 5, 4, true, 13);
+  const dQ = 5.6, dP = D_fn(dQ, a);
+  if (dP > 0 && dP < PY) label('D', dQ, dP, '#4fc3f7', 5, 4, true, 13);
+  // MR label: find good Q position
+  for (let q = 0.8; q <= 4; q += 0.3) {
+    const mrv = MR_fn(q, a);
+    if (mrv > 2 && mrv < PY-2) { label('MR', q, mrv, 'rgba(79,195,247,0.8)', 5, -3, true, 12); break; }
+  }
+
+  // ── D=AC intersection markers (non-tangent only) ──
+  if (!tang) {
+    dacs.forEach(q => {
+      const p = D_fn(q, a);
+      if (p < 0 || p > PY) return;
+      // subtle vertical indicator
+      g.save(); g.setLineDash([3,3]); g.strokeStyle='rgba(79,195,247,0.22)'; g.lineWidth=1;
+      g.beginPath(); g.moveTo(px(q), MT+CH); g.lineTo(px(q), py(p)+6); g.stroke(); g.restore();
+      dot(q, p, 5, 'rgba(79,195,247,0.4)', 'rgba(200,230,255,0.6)', 1.5);
+    });
+  }
+
+  // ── Q* vertical line & key markers ──
+  if (Qs && Qs > 0.1 && Qs < QX) {
+    const Pv  = D_fn(Qs, a);
+    const ACv = AC_fn(Qs);
+    const MRv = MR_fn(Qs, a);
+    const MCv = MC_fn(Qs);
+
+    // Vertical dashed line at Q*
+    const topP = Math.max(Pv, ACv, MRv > 0 ? MRv : 0) + 1.5;
+    const vCol = tang ? '#ffd700' : 'rgba(180,195,225,0.38)';
+    vline(Qs, vCol, [8,5], tang ? 2.5 : 1.5, py(Math.min(topP, PY)));
+
+    // Horizontal guide lines
+    if (Pv > 0 && Pv < PY) hline(Pv, ML, px(Qs)+2, 'rgba(79,195,247,0.22)');
+    if (MRv > 0 && MRv < PY) hline(MRv, ML, px(Qs)+2, 'rgba(255,150,80,0.22)');
+    // P* tick label on y-axis
+    if (Pv > 0 && Pv < PY) {
+      g.save(); g.fillStyle = '#64b5f6'; g.font = '10px Segoe UI';
+      g.fillText(Pv.toFixed(1), ML-36, py(Pv)+4); g.restore();
+    }
+
+    // MR=MC dot (red)
+    if (MRv > -2 && MRv < PY) {
+      dot(Qs, MRv, 7, '#e74c3c', '#fff', 2);
+      g.save(); g.fillStyle='#e74c3c'; g.font='bold 11px Segoe UI';
+      g.fillText('MR=MC', px(Qs)+9, py(MRv)-4); g.restore();
+    }
+
+    // Demand point on D curve
+    if (Pv > -1 && Pv < PY+1) {
+      const dcol = tang ? '#ffd700' : '#4fc3f7';
+      dot(Qs, Math.min(Pv, PY), 7, dcol, '#fff', 2);
+      if (tang) {
+        // Star
+        g.save(); g.font='22px serif'; g.fillStyle='#ffd700';
+        g.fillText('★', px(Qs)-11, py(Pv)-11); g.restore();
+        g.save(); g.fillStyle='#ffd700'; g.font='bold 11px Segoe UI';
+        g.fillText('切点', px(Qs)+9, py(Pv)+4); g.restore();
+      }
+    }
+
+    // Q* x-axis label
+    g.save();
+    g.fillStyle = tang ? '#ffd700' : '#7888a8';
+    g.font = (tang ? 'bold ' : '') + '11px Segoe UI';
+    g.fillText('Q*='+Qs.toFixed(1), px(Qs)-16, MT+CH+30); g.restore();
+
+    // ── Update panel ──
+    const pi = (Pv - ACv) * Qs;
+    document.getElementById('aNum').textContent = a.toFixed(1);
+    document.getElementById('eq1').textContent  = a.toFixed(1);
+    document.getElementById('eq2').textContent  = a.toFixed(1);
+    document.getElementById('v1').textContent   = Qs.toFixed(2);
+    document.getElementById('v2').textContent   = Math.max(0, Pv).toFixed(2);
+    document.getElementById('v3').textContent   = ACv.toFixed(2);
+    document.getElementById('v5').textContent   = MRv.toFixed(2);
+    document.getElementById('v6').textContent   = MCv.toFixed(2);
+    const piEl = document.getElementById('v4');
+    piEl.textContent = pi.toFixed(2);
+    piEl.style.color = pi > 0.1 ? '#4ecca3' : pi < -0.1 ? '#ff6b6b' : '#ffd700';
+
+    const st = document.getElementById('stBox');
+    const al = document.getElementById('altBox');
+    if (tang) {
+      st.className = 'status-box s-zero'; st.textContent = '⭐ 零利润（长期均衡）';
+      al.textContent = '✅ 切点 与 MR=MC 交点在同一垂线！';
+    } else if (pi > 0.1) {
+      st.className = 'status-box s-profit'; st.textContent = '📈 正利润';
+      al.textContent = '';
+    } else {
+      st.className = 'status-box s-loss'; st.textContent = '📉 亏损';
+      al.textContent = '';
+    }
+  } else {
+    // No MR=MC solution
+    ['v1','v2','v3','v4','v5','v6'].forEach(id => document.getElementById(id).textContent = '--');
+    document.getElementById('stBox').className = 'status-box s-loss';
+    document.getElementById('stBox').textContent = '⛔ 停产';
+    document.getElementById('altBox').textContent = '';
+    document.getElementById('aNum').textContent = a.toFixed(1);
+    document.getElementById('eq1').textContent  = a.toFixed(1);
+    document.getElementById('eq2').textContent  = a.toFixed(1);
+  }
+}
+
+// Snap to tangent
+function snapTangent() {
+  document.getElementById('sl').value = 16;
+  draw(16);
+}
+
+document.getElementById('sl').addEventListener('input', e => draw(parseFloat(e.target.value)));
+draw(16);
+</script>
+</body>
+</html>

@@ -1,0 +1,727 @@
+﻿<!doctype html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Total, Average, and Marginal Product</title>
+  <style>
+    :root {
+      --page: #eef3f8;
+      --paper: #ffffff;
+      --ink: #162033;
+      --muted: #637086;
+      --line: #d8e0ea;
+      --grid: #dfe6ee;
+      --tp: #00a6e8;
+      --ap: #c70000;
+      --mp: #82c844;
+      --accent: #f08a24;
+      --zone-one: rgba(130, 200, 68, 0.08);
+      --zone-two: rgba(22, 32, 51, 0.035);
+      --zone-three: rgba(199, 0, 0, 0.06);
+      --soft-red: rgba(199, 0, 0, 0.10);
+      --soft-green: rgba(130, 200, 68, 0.15);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #111827;
+        --paper: #172033;
+        --ink: #f3f6fb;
+        --muted: #aeb9ca;
+        --line: #354158;
+        --grid: #344057;
+        --ap: #ff5a55;
+        --mp: #9cdb63;
+        --zone-one: rgba(130, 200, 68, 0.10);
+        --zone-two: rgba(255, 255, 255, 0.035);
+        --zone-three: rgba(255, 90, 85, 0.08);
+        --soft-red: rgba(255, 90, 85, 0.14);
+        --soft-green: rgba(156, 219, 99, 0.15);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1500px, calc(100% - 28px));
+      margin: 18px auto;
+      padding: 24px 28px 22px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 52px rgba(20, 35, 60, 0.10);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(28px, 3.5vw, 50px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 1120px;
+      margin: 0 auto 18px;
+    }
+
+    .readout {
+      min-height: 69px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--paper) 94%, var(--page));
+    }
+
+    .readout .label {
+      display: block;
+      margin-block-end: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+
+    .readout .value {
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #tpValue { color: var(--tp); }
+    #apValue { color: var(--ap); }
+    #mpValue { color: var(--mp); }
+    #interceptValue { color: var(--accent); }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 14px 14px 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--paper) 97%, var(--page));
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .panel-note {
+      min-height: 38px;
+      margin: 0 0 2px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
+    .axis { stroke: var(--ink); stroke-width: 1.8; }
+    .zero-axis { stroke: var(--ink); stroke-width: 1.6; }
+    .tick { stroke: var(--ink); stroke-width: 1.1; }
+    .tick-label, .axis-label, .annotation, .point-label, .zone-label {
+      fill: var(--ink);
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .tick-label { font-size: 12px; }
+    .axis-label { font-size: 16px; font-weight: 750; }
+    .annotation { font-size: 13px; font-weight: 700; }
+    .point-label { font-size: 12px; font-weight: 750; }
+    .slope-card {
+      fill: var(--paper);
+      stroke: var(--line);
+      stroke-width: 1.2;
+      filter: drop-shadow(0 3px 5px rgba(20, 35, 60, 0.16));
+    }
+    .card-coordinate, .card-ap, .card-mp {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-weight: 750;
+    }
+    .card-coordinate { fill: var(--ink); font-size: 12px; }
+    .card-ap { fill: var(--ap); font-size: 13px; }
+    .card-mp { fill: var(--mp); font-size: 13px; }
+    .zone-label { font-size: 12px; font-weight: 750; }
+    .tp-path { fill: none; stroke: var(--tp); stroke-width: 5; stroke-linecap: round; }
+    .curve-ghost { fill: none; stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+    .ap-path { fill: none; stroke: var(--ap); stroke-width: 5; stroke-linecap: round; }
+    .mp-path { fill: none; stroke: var(--mp); stroke-width: 5; stroke-linecap: round; }
+    .ray { stroke: var(--ap); stroke-width: 2.6; }
+    .tangent { stroke: var(--mp); stroke-width: 2.8; }
+    .guide { stroke: #7182a0; stroke-width: 1.3; stroke-dasharray: 5 5; }
+    .stage-separator { stroke: #7182a0; stroke-width: 1.5; stroke-dasharray: 7 6; }
+    .ap-guide { stroke: var(--ap); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .mp-guide { stroke: var(--mp); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .active-point { fill: var(--tp); stroke: var(--paper); stroke-width: 4; }
+    .ap-point { fill: var(--ap); stroke: var(--paper); stroke-width: 4; }
+    .mp-point { fill: var(--mp); stroke: var(--paper); stroke-width: 4; }
+    .intercept-point { fill: var(--accent); stroke: var(--paper); stroke-width: 3; }
+    .hit-area { fill: transparent; cursor: ew-resize; }
+    .pill-ap { fill: var(--ap); }
+    .pill-mp { fill: #619c2f; }
+    .pill-l { fill: #52627d; }
+    .pill-text {
+      fill: #ffffff;
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .formula-ap { fill: var(--ap); }
+    .formula-mp { fill: var(--mp); }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 760px) auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 940px;
+      margin: 14px auto 0;
+      padding-block-start: 14px;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .control-row label, .control-row output {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--tp);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+      margin-block-start: 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 20px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .explanation {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 1120px;
+      margin: 12px auto 0;
+    }
+
+    .explain-card {
+      padding: 11px 13px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .explain-card.ap { background: var(--soft-red); }
+    .explain-card.mp { background: var(--soft-green); }
+    .state {
+      font-weight: 800;
+    }
+
+    @media (max-width: 980px) {
+      main { width: min(100% - 16px, 760px); padding: 20px 14px; }
+      .readouts { grid-template-columns: repeat(3, 1fr); }
+      .charts { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 580px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .control-row { grid-template-columns: 1fr auto; }
+      .control-row input { grid-column: 1 / -1; grid-row: 2; }
+      .explanation { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .active-point, .ap-point, .mp-point, .ray, .tangent, .guide,
+      .ap-guide, .mp-guide, .pill-ap, .pill-mp, .pill-l, .pill-text {
+        transition: 70ms linear;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Total Product → Average Product &amp; Marginal Product</h1>
+    <p class="subtitle">在左图移动劳动投入：切线斜率生成 MP，原点连线斜率生成 AP；右图同步描出两条产量曲线</p>
+
+    <section class="readouts" aria-label="当前数值" aria-live="polite">
+      <div class="readout"><span class="label">劳动投入 L</span><span class="value" id="lValue">4.0</span></div>
+      <div class="readout"><span class="label">总产量 TP</span><span class="value" id="tpValue">—</span></div>
+      <div class="readout"><span class="label">平均产量 AP = TP/L</span><span class="value" id="apValue">—</span></div>
+      <div class="readout"><span class="label">边际产量 MP = dTP/dL</span><span class="value" id="mpValue">—</span></div>
+      <div class="readout"><span class="label">当前阶段</span><span class="value" id="interceptValue">—</span></div>
+    </section>
+
+    <section class="charts">
+      <div class="panel">
+        <h2>总产量曲线 TP(L)</h2>
+        <p class="panel-note">红线从原点连到当前点：斜率 = AP；绿线为当前切线：斜率 = MP</p>
+        <svg id="tpChart" viewBox="0 0 680 500" role="img" aria-labelledby="tpTitle tpDesc">
+          <title id="tpTitle">总产量及其平均产量线和边际产量切线</title>
+          <desc id="tpDesc">移动鼠标改变劳动投入。总产量曲线、原点连线、切线和当前产量同步变化。</desc>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <h2>由斜率描出的 AP 与 MP</h2>
+        <p class="panel-note">右图逐步描出 AP 与 MP；MP 穿过 AP 的最高点，并在 TP 最高点等于 0</p>
+        <svg id="productChart" viewBox="0 0 680 500" role="img" aria-labelledby="productTitle productDesc">
+          <title id="productTitle">平均产量与边际产量曲线</title>
+          <desc id="productDesc">平均产量和边际产量随劳动投入变化，分为边际产量递增、递减和负边际产量三个阶段。</desc>
+        </svg>
+      </div>
+    </section>
+
+    <div class="control-row">
+      <label for="laborSlider">精确选择劳动投入</label>
+      <input id="laborSlider" type="range" min="0.5" max="10" step="0.05" value="4" aria-label="劳动投入 L">
+      <output id="sliderOutput" for="laborSlider">L = 4.0</output>
+    </div>
+
+    <div class="legend" aria-label="图例">
+      <span class="legend-item"><span class="swatch" style="background:var(--tp)"></span>TP(L)</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--ap)"></span>AP = TP/L（原点连线斜率）</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--mp)"></span>MP = dTP/dL（切线斜率）</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--accent)"></span>切线纵轴截距</span>
+    </div>
+
+    <section class="explanation">
+      <div class="explain-card ap"><strong>Average product：</strong>原点与 TP 曲线上当前点的连线斜率就是 AP。当 MP 高于 AP 时，AP 上升；当 MP 低于 AP 时，AP 下降。</div>
+      <div class="explain-card mp"><strong>Marginal product：</strong>TP 曲线上当前点的切线斜率就是 MP。MP 从递增转为递减，对应 TP 从加速增长转为减速增长；MP = 0 时 TP 达到最高点。</div>
+    </section>
+  </main>
+
+  <script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 680;
+      const H = 500;
+      const M = { left: 82, right: 35, top: 38, bottom: 64 };
+      const PW = W - M.left - M.right;
+      const PH = H - M.top - M.bottom;
+      const lMin = 0.5;
+      const lMax = 10;
+      const tpMin = 0;
+      const tpMax = 18;
+      const productMin = -3;
+      const productMax = 4.5;
+
+      // Smooth approximation of the production table on the source slide:
+      // TP(L) = a1L + a2L² + a3L³ + a4L⁴.
+      const a1 = -0.55071858;
+      const a2 = 1.39989146;
+      const a3 = -0.18926790;
+      const a4 = 0.00677948;
+
+      const totalProduct = l => a1 * l + a2 * l ** 2 + a3 * l ** 3 + a4 * l ** 4;
+      const averageProduct = l => totalProduct(l) / l;
+      const marginalProduct = l => a1 + 2 * a2 * l + 3 * a3 * l ** 2 + 4 * a4 * l ** 3;
+      const tangentIntercept = l => totalProduct(l) - marginalProduct(l) * l;
+
+      const mpPeakL = 3.20;
+      const tpPeakL = 7.46;
+
+      const tpSvg = document.getElementById("tpChart");
+      const productSvg = document.getElementById("productChart");
+      const slider = document.getElementById("laborSlider");
+      const fmt1 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+      const x = l => M.left + l / lMax * PW;
+      const yTP = value => M.top + (tpMax - value) / (tpMax - tpMin) * PH;
+      const yProduct = value => M.top + (productMax - value) / (productMax - productMin) * PH;
+
+      function svgEl(name, attrs = {}, text = "") {
+        const el = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function pathFor(start, end, step, yFn) {
+        const pts = [];
+        for (let l = start; l <= end + 0.0001; l += step) {
+          pts.push(`${pts.length ? "L" : "M"}${x(l).toFixed(2)},${yFn(l).toFixed(2)}`);
+        }
+        return pts.join(" ");
+      }
+
+      function addArrowMarker(svg, id) {
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", {
+          id, markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5,
+          orient: "auto", markerUnits: "strokeWidth"
+        });
+        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "currentColor" }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+      }
+
+      function drawBase(svg, yTicks, yScale, yLabel, markerId, zeroValue) {
+        addArrowMarker(svg, markerId);
+        svg.appendChild(svgEl("rect", { class: "frame", x: M.left, y: M.top, width: PW, height: PH }));
+
+        for (const l of [0, 2, 4, 6, 8, 10]) {
+          const xx = x(l);
+          if (l > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: xx, y1: M.top, x2: xx, y2: M.top + PH }));
+          const axisY = yScale(zeroValue);
+          svg.appendChild(svgEl("line", { class: "tick", x1: xx, y1: axisY, x2: xx, y2: axisY + 6 }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: xx, y: axisY + 24, "text-anchor": "middle" }, String(l)));
+        }
+
+        for (const value of yTicks) {
+          const yy = yScale(value);
+          if (value !== zeroValue) svg.appendChild(svgEl("line", { class: "grid-line", x1: M.left, y1: yy, x2: M.left + PW, y2: yy }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: M.left - 6, y1: yy, x2: M.left, y2: yy }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: M.left - 11, y: yy + 4, "text-anchor": "end" }, String(value)));
+        }
+
+        const axisY = yScale(zeroValue);
+        svg.appendChild(svgEl("line", {
+          class: "zero-axis", x1: M.left, y1: axisY, x2: M.left + PW + 15,
+          y2: axisY, "marker-end": `url(#${markerId})`
+        }));
+        svg.appendChild(svgEl("line", {
+          class: "axis", x1: M.left, y1: M.top + PH, x2: M.left,
+          y2: M.top - 14, "marker-end": `url(#${markerId})`
+        }));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left + PW + 22, y: axisY + 6 }, "L"));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left - 8, y: M.top - 17, "text-anchor": "end" }, yLabel));
+      }
+
+      drawBase(tpSvg, [0, 3, 6, 9, 12, 15, 18], yTP, "TP", "arrow-tp", 0);
+      drawBase(productSvg, [-3, -2, -1, 0, 1, 2, 3, 4], yProduct, "AP, MP", "arrow-product", 0);
+
+      // Three stages of marginal product on the right chart.
+      const zoneY = M.top;
+      const zoneH = PH;
+      productSvg.appendChild(svgEl("rect", {
+        x: x(0), y: zoneY, width: x(mpPeakL) - x(0), height: zoneH, fill: "var(--zone-one)"
+      }));
+      productSvg.appendChild(svgEl("rect", {
+        x: x(mpPeakL), y: zoneY, width: x(tpPeakL) - x(mpPeakL), height: zoneH, fill: "var(--zone-two)"
+      }));
+      productSvg.appendChild(svgEl("rect", {
+        x: x(tpPeakL), y: zoneY, width: x(lMax) - x(tpPeakL), height: zoneH, fill: "var(--zone-three)"
+      }));
+      productSvg.appendChild(svgEl("line", {
+        class: "stage-separator", x1: x(mpPeakL), y1: M.top, x2: x(mpPeakL), y2: M.top + PH
+      }));
+      productSvg.appendChild(svgEl("line", {
+        class: "stage-separator", x1: x(tpPeakL), y1: M.top, x2: x(tpPeakL), y2: M.top + PH
+      }));
+      productSvg.appendChild(svgEl("text", {
+        class: "zone-label", x: x(mpPeakL / 2), y: M.top + 18, "text-anchor": "middle", fill: "var(--mp)"
+      }, "MP 递增"));
+      productSvg.appendChild(svgEl("text", {
+        class: "zone-label", x: x((mpPeakL + tpPeakL) / 2), y: M.top + 18, "text-anchor": "middle"
+      }, "MP 递减"));
+      productSvg.appendChild(svgEl("text", {
+        class: "zone-label", x: x((tpPeakL + lMax) / 2), y: M.top + 18, "text-anchor": "middle", fill: "var(--ap)"
+      }, "MP < 0"));
+
+      const tpCurve = svgEl("path", { class: "tp-path", d: pathFor(0, lMax, 0.04, l => yTP(totalProduct(l))) });
+      tpSvg.appendChild(tpCurve);
+      tpSvg.appendChild(svgEl("text", {
+        class: "annotation", x: x(8.5), y: yTP(totalProduct(8.5)) - 16, fill: "var(--tp)"
+      }, "TP(L)"));
+
+      const fullApPath = pathFor(lMin, lMax, 0.035, l => yProduct(averageProduct(l)));
+      const fullMpPath = pathFor(lMin, lMax, 0.035, l => yProduct(marginalProduct(l)));
+      productSvg.appendChild(svgEl("path", { class: "curve-ghost", d: fullApPath }));
+      productSvg.appendChild(svgEl("path", { class: "curve-ghost", d: fullMpPath }));
+
+      const apTrace = svgEl("path", { class: "ap-path" });
+      const mpTrace = svgEl("path", { class: "mp-path" });
+      productSvg.appendChild(apTrace);
+      productSvg.appendChild(mpTrace);
+
+      const originRay = svgEl("line", { class: "ray" });
+      const tangent = svgEl("line", { class: "tangent" });
+      const tpVertical = svgEl("line", { class: "guide" });
+      const tpPoint = svgEl("circle", { class: "active-point", r: 8 });
+      const slopeCard = svgEl("rect", { class: "slope-card", rx: 9, width: 166, height: 62 });
+      const coordinateLabel = svgEl("text", { class: "card-coordinate" });
+      const apSlopeLabel = svgEl("text", { class: "card-ap" });
+      const mpSlopeLabel = svgEl("text", { class: "card-mp" });
+      const interceptPoint = svgEl("circle", { class: "intercept-point", r: 6 });
+      const interceptLabel = svgEl("text", { class: "point-label", fill: "var(--accent)" });
+      const leftLPill = svgEl("rect", { class: "pill-l", rx: 6, width: 58, height: 23 });
+      const leftLText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      for (const el of [
+        originRay, tangent, tpVertical, interceptPoint, interceptLabel, leftLPill, leftLText,
+        slopeCard, coordinateLabel, apSlopeLabel, mpSlopeLabel, tpPoint
+      ]) {
+        tpSvg.appendChild(el);
+      }
+
+      const productVertical = svgEl("line", { class: "guide" });
+      const apHorizontal = svgEl("line", { class: "ap-guide" });
+      const mpHorizontal = svgEl("line", { class: "mp-guide" });
+      const apPoint = svgEl("circle", { class: "ap-point", r: 8 });
+      const mpPoint = svgEl("circle", { class: "mp-point", r: 8 });
+      const rightLPill = svgEl("rect", { class: "pill-l", rx: 6, width: 58, height: 23 });
+      const rightLText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const apPill = svgEl("rect", { class: "pill-ap", rx: 6, width: 66, height: 23 });
+      const apText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const mpPill = svgEl("rect", { class: "pill-mp", rx: 6, width: 66, height: 23 });
+      const mpText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const apLabel = svgEl("text", { class: "point-label formula-ap" });
+      const mpLabel = svgEl("text", { class: "point-label formula-mp" });
+      for (const el of [
+        productVertical, apHorizontal, mpHorizontal, rightLPill, rightLText,
+        apPill, apText, mpPill, mpText, apPoint, mpPoint, apLabel, mpLabel
+      ]) productSvg.appendChild(el);
+
+      function clipLineToTPChart(slope, intercept) {
+        const candidates = [];
+        const atL0 = intercept;
+        const atLMax = slope * lMax + intercept;
+        if (atL0 >= tpMin && atL0 <= tpMax) candidates.push([0, atL0]);
+        if (atLMax >= tpMin && atLMax <= tpMax) candidates.push([lMax, atLMax]);
+        if (Math.abs(slope) > 0.00001) {
+          for (const yy of [tpMin, tpMax]) {
+            const l = (yy - intercept) / slope;
+            if (l >= 0 && l <= lMax) candidates.push([l, yy]);
+          }
+        }
+        const unique = [];
+        for (const point of candidates) {
+          if (!unique.some(other => Math.abs(other[0] - point[0]) < 0.001 && Math.abs(other[1] - point[1]) < 0.001)) {
+            unique.push(point);
+          }
+        }
+        return unique.slice(0, 2);
+      }
+
+      function stageFor(l, mp) {
+        if (mp < 0) return "负边际产量";
+        if (l < mpPeakL) return "MP 递增";
+        return "MP 递减";
+      }
+
+      function update(rawL) {
+        const l = Math.max(lMin, Math.min(lMax, Number(rawL)));
+        const tp = totalProduct(l);
+        const ap = averageProduct(l);
+        const mp = marginalProduct(l);
+        const intercept = tangentIntercept(l);
+        const xx = x(l);
+        const tpY = yTP(tp);
+        const apY = yProduct(ap);
+        const mpY = yProduct(mp);
+        const tpBaseY = yTP(0);
+        const productAxisY = yProduct(0);
+
+        originRay.setAttribute("x1", x(0));
+        originRay.setAttribute("y1", yTP(0));
+        originRay.setAttribute("x2", xx);
+        originRay.setAttribute("y2", tpY);
+
+        const tangentEnds = clipLineToTPChart(mp, intercept);
+        if (tangentEnds.length === 2) {
+          tangent.setAttribute("x1", x(tangentEnds[0][0]));
+          tangent.setAttribute("y1", yTP(tangentEnds[0][1]));
+          tangent.setAttribute("x2", x(tangentEnds[1][0]));
+          tangent.setAttribute("y2", yTP(tangentEnds[1][1]));
+        }
+
+        for (const [el, attrs] of [
+          [tpVertical, { x1: xx, y1: tpY, x2: xx, y2: tpBaseY }],
+          [tpPoint, { cx: xx, cy: tpY }],
+          [productVertical, { x1: xx, y1: M.top, x2: xx, y2: M.top + PH }],
+          [apHorizontal, { x1: M.left, y1: apY, x2: xx, y2: apY }],
+          [mpHorizontal, { x1: M.left, y1: mpY, x2: xx, y2: mpY }],
+          [apPoint, { cx: xx, cy: apY }],
+          [mpPoint, { cx: xx, cy: mpY }]
+        ]) {
+          for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        }
+
+        const interceptVisible = intercept >= tpMin && intercept <= tpMax;
+        interceptPoint.style.display = interceptVisible ? "" : "none";
+        interceptLabel.style.display = interceptVisible ? "" : "none";
+        if (interceptVisible) {
+          interceptPoint.setAttribute("cx", x(0));
+          interceptPoint.setAttribute("cy", yTP(intercept));
+          interceptLabel.setAttribute("x", x(0) + 10);
+          interceptLabel.setAttribute("y", yTP(intercept) + (intercept > 16 ? 18 : -10));
+          interceptLabel.textContent = `切线截距 = ${fmt1.format(intercept)}`;
+        }
+
+        const cardWidth = 166;
+        const cardHeight = 62;
+        let cardX = xx + 14;
+        if (cardX + cardWidth > M.left + PW - 4) cardX = xx - cardWidth - 14;
+        let cardY = tpY - cardHeight - 14;
+        if (cardY < M.top + 5) cardY = tpY + 14;
+        if (cardY + cardHeight > M.top + PH - 5) cardY = M.top + PH - cardHeight - 5;
+
+        slopeCard.setAttribute("x", cardX);
+        slopeCard.setAttribute("y", cardY);
+        coordinateLabel.setAttribute("x", cardX + 11);
+        coordinateLabel.setAttribute("y", cardY + 21);
+        coordinateLabel.textContent = `(L, TP) = (${fmt1.format(l)}, ${fmt1.format(tp)})`;
+        apSlopeLabel.setAttribute("x", cardX + 11);
+        apSlopeLabel.setAttribute("y", cardY + 47);
+        apSlopeLabel.textContent = `AP = ${fmt1.format(ap)}`;
+        mpSlopeLabel.setAttribute("x", cardX + 88);
+        mpSlopeLabel.setAttribute("y", cardY + 47);
+        mpSlopeLabel.textContent = `MP = ${fmt1.format(mp)}`;
+
+        apLabel.setAttribute("x", xx + (l > 8.2 ? -12 : 12));
+        apLabel.setAttribute("y", apY - 12);
+        apLabel.setAttribute("text-anchor", l > 8.2 ? "end" : "start");
+        apLabel.textContent = "AP";
+        mpLabel.setAttribute("x", xx + (l > 8.2 ? -12 : 12));
+        mpLabel.setAttribute("y", mpY + (Math.abs(mpY - apY) < 30 ? 25 : -12));
+        mpLabel.setAttribute("text-anchor", l > 8.2 ? "end" : "start");
+        mpLabel.textContent = "MP";
+
+        leftLPill.setAttribute("x", xx - 29);
+        leftLPill.setAttribute("y", tpBaseY + 7);
+        leftLText.setAttribute("x", xx);
+        leftLText.setAttribute("y", tpBaseY + 23);
+        leftLText.textContent = fmt1.format(l);
+        rightLPill.setAttribute("x", xx - 29);
+        rightLPill.setAttribute("y", productAxisY + 7);
+        rightLText.setAttribute("x", xx);
+        rightLText.setAttribute("y", productAxisY + 23);
+        rightLText.textContent = fmt1.format(l);
+
+        apPill.setAttribute("x", M.left - 72);
+        apPill.setAttribute("y", apY - 11.5);
+        apText.setAttribute("x", M.left - 39);
+        apText.setAttribute("y", apY + 4);
+        apText.textContent = `AP ${fmt1.format(ap)}`;
+        mpPill.setAttribute("x", M.left - 72);
+        mpPill.setAttribute("y", mpY - 11.5);
+        mpText.setAttribute("x", M.left - 39);
+        mpText.setAttribute("y", mpY + 4);
+        mpText.textContent = `MP ${fmt1.format(mp)}`;
+
+        apTrace.setAttribute("d", pathFor(lMin, l, 0.025, value => yProduct(averageProduct(value))));
+        mpTrace.setAttribute("d", pathFor(lMin, l, 0.025, value => yProduct(marginalProduct(value))));
+
+        document.getElementById("lValue").textContent = fmt1.format(l);
+        document.getElementById("tpValue").textContent = fmt1.format(tp);
+        document.getElementById("apValue").textContent = fmt1.format(ap);
+        document.getElementById("mpValue").textContent = fmt1.format(mp);
+        document.getElementById("interceptValue").textContent = stageFor(l, mp);
+        document.getElementById("sliderOutput").textContent = `L = ${fmt1.format(l)}`;
+        slider.value = l.toFixed(2);
+      }
+
+      const hit = svgEl("rect", {
+        class: "hit-area", x: M.left - 8, y: M.top - 8,
+        width: PW + 16, height: PH + 16, "aria-label": "移动鼠标选择劳动投入"
+      });
+      tpSvg.appendChild(hit);
+
+      function lFromPointer(event) {
+        const bounds = tpSvg.getBoundingClientRect();
+        const svgX = (event.clientX - bounds.left) / bounds.width * W;
+        return (svgX - M.left) / PW * lMax;
+      }
+
+      hit.addEventListener("pointermove", event => update(lFromPointer(event)));
+      hit.addEventListener("pointerdown", event => {
+        hit.setPointerCapture(event.pointerId);
+        update(lFromPointer(event));
+      });
+      hit.addEventListener("pointerup", event => {
+        if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
+      });
+      slider.addEventListener("input", event => update(event.target.value));
+
+      update(4);
+    })();
+  </script>
+</body>
+</html>

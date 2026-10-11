@@ -1,0 +1,761 @@
+﻿<!doctype html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Loss Minimization and the Shutdown Decision</title>
+  <style>
+    :root {
+      --page: #eef3f8;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #66748a;
+      --line: #d7e0ea;
+      --grid: #dfe6ee;
+      --mc: #7357d9;
+      --atc: #e5a12a;
+      --avc: #159f91;
+      --price: #2f9e44;
+      --area-a: #ef7668;
+      --area-a-stroke: #d84a43;
+      --area-b: #4d8fdb;
+      --area-b-soft: rgba(77, 143, 219, 0.15);
+      --profit-area: #52b96f;
+      --active: #355da8;
+      --continue: #258b4b;
+      --shutdown: #d84a43;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #111827;
+        --paper: #172033;
+        --ink: #f3f6fb;
+        --muted: #aeb9ca;
+        --line: #354158;
+        --grid: #344057;
+        --mc: #a78bfa;
+        --atc: #f5b942;
+        --avc: #38d6c1;
+        --price: #61d978;
+        --area-a: #ff8b82;
+        --area-a-stroke: #ff7770;
+        --area-b: #79a7ff;
+        --area-b-soft: rgba(121, 167, 255, 0.16);
+        --profit-area: #61d978;
+        --active: #79a7ff;
+        --continue: #61d978;
+        --shutdown: #ff7770;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 18px auto;
+      padding: 24px 28px 22px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 52px rgba(20, 35, 60, 0.10);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(29px, 4vw, 50px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .price-text { color: var(--price); font-weight: 800; }
+    .atc-text { color: var(--atc); font-weight: 800; }
+    .avc-text { color: var(--avc); font-weight: 800; }
+    .area-a-text { color: var(--area-a-stroke); font-weight: 800; }
+    .area-b-text { color: var(--area-b); font-weight: 800; }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(115px, 1fr));
+      gap: 10px;
+      margin: 0 auto 18px;
+    }
+
+    .readout {
+      min-height: 70px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--paper) 94%, var(--page));
+    }
+
+    .readout .label {
+      display: block;
+      margin-block-end: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .readout .value {
+      font-size: 21px;
+      line-height: 1.18;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #priceValue { color: var(--price); }
+    #qValue { color: var(--active); }
+    #atcValue { color: var(--atc); }
+    #avcValue { color: var(--avc); }
+    #aValue { color: var(--area-a-stroke); }
+    #bValue { color: var(--area-b); }
+    #statusValue.continue { color: var(--continue); }
+    #statusValue.shutdown { color: var(--shutdown); }
+
+    .panel {
+      min-width: 0;
+      padding: 14px 16px 9px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--paper) 97%, var(--page));
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      text-align: center;
+      font-size: 19px;
+      line-height: 1.25;
+    }
+
+    .panel-note {
+      min-height: 38px;
+      margin: 0 0 2px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .frame { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
+    .axis { stroke: var(--ink); stroke-width: 1.8; }
+    .tick { stroke: var(--ink); stroke-width: 1.1; }
+    .tick-label, .axis-label {
+      fill: var(--ink);
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .annotation, .area-label {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .tick-label { font-size: 12px; }
+    .axis-label { font-size: 16px; font-weight: 800; }
+    .annotation { font-size: 13px; font-weight: 750; }
+    .area-label { font-size: 14px; font-weight: 850; }
+    .mc-path { fill: none; stroke: var(--mc); stroke-width: 5; stroke-linecap: round; }
+    .atc-path { fill: none; stroke: var(--atc); stroke-width: 5; stroke-linecap: round; }
+    .avc-path { fill: none; stroke: var(--avc); stroke-width: 5; stroke-linecap: round; }
+    .price-line { stroke: var(--price); stroke-width: 3.5; }
+    .guide { stroke: #7182a0; stroke-width: 1.4; stroke-dasharray: 6 5; }
+    .area-a { fill: color-mix(in srgb, var(--area-a) 62%, transparent); stroke: var(--area-a-stroke); stroke-width: 2; }
+    .area-a.profit { fill: color-mix(in srgb, var(--profit-area) 42%, transparent); stroke: var(--profit-area); }
+    .area-b { fill: url(#blueHatch); stroke: var(--area-b); stroke-width: 2.3; }
+    .mc-point { fill: var(--mc); stroke: var(--paper); stroke-width: 4; }
+    .atc-point { fill: var(--atc); stroke: var(--paper); stroke-width: 4; }
+    .avc-point { fill: var(--avc); stroke: var(--paper); stroke-width: 4; }
+    .minimum-point { fill: var(--paper); stroke-width: 4; }
+    .hit-area { fill: transparent; cursor: ns-resize; }
+    .pill-price { fill: var(--price); }
+    .pill-atc { fill: var(--atc); }
+    .pill-avc { fill: var(--avc); }
+    .pill-q { fill: #52627d; }
+    .pill-text {
+      fill: #ffffff;
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .callout {
+      fill: var(--paper);
+      stroke: var(--line);
+      stroke-width: 1.2;
+      filter: drop-shadow(0 3px 5px rgba(20, 35, 60, 0.16));
+    }
+    .callout-title, .callout-line {
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+      font-weight: 800;
+    }
+    .callout-title { fill: var(--ink); font-size: 13px; }
+    .callout-line { font-size: 12px; }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 700px) auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 900px;
+      margin: 14px auto 0;
+      padding-block-start: 14px;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .control-row label, .control-row output {
+      font-size: 14px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--price);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+      margin-block-start: 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 20px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px auto 0;
+    }
+
+    .note-card {
+      padding: 11px 13px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note-card.a { background: rgba(239, 118, 104, 0.14); }
+    .note-card.b { background: var(--area-b-soft); }
+
+    @media (max-width: 900px) {
+      main { width: min(100% - 16px, 760px); padding: 20px 14px; }
+      .readouts { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 560px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .control-row { grid-template-columns: 1fr auto; }
+      .control-row input { grid-column: 1 / -1; grid-row: 2; }
+      .notes { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .price-line, .guide, .area-a, .area-b, .mc-point, .atc-point,
+      .avc-point, .pill-price, .pill-atc, .pill-avc, .pill-q,
+      .pill-text, .callout {
+        transition: 75ms linear;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Loss Minimization and the Shutdown Decision</h1>
+    <p class="subtitle">上下移动鼠标调整 <span class="price-text">Pe</span>；系统同步更新 q*、成本点、<span class="area-a-text">A 区域</span>和<span class="area-b-text">B 区域</span></p>
+
+    <section class="readouts" aria-label="当前数值" aria-live="polite">
+      <div class="readout"><span class="label">价格 Pe = MR</span><span class="value" id="priceValue">12.0</span></div>
+      <div class="readout"><span class="label">最优产量 q*</span><span class="value" id="qValue">—</span></div>
+      <div class="readout"><span class="label">ATC(q*)</span><span class="value" id="atcValue">—</span></div>
+      <div class="readout"><span class="label">AVC(q*)</span><span class="value" id="avcValue">—</span></div>
+      <div class="readout"><span class="label" id="aReadoutLabel">A：运营亏损</span><span class="value" id="aValue">—</span></div>
+      <div class="readout"><span class="label">B：固定成本</span><span class="value" id="bValue">220.0</span></div>
+    </section>
+
+    <section class="panel">
+      <h2>短期继续运营还是停产？</h2>
+      <p class="panel-note">
+        <span class="area-a-text">A = [ATC(q*) − Pe] × q*</span>；
+        <span class="area-b-text">B = [ATC(q*) − AVC(q*)] × q* = FC</span>
+      </p>
+      <svg id="lossChart" viewBox="0 0 1000 585" role="img" aria-labelledby="lossTitle lossDesc">
+        <title id="lossTitle">短期亏损最小化与停产决策</title>
+        <desc id="lossDesc">调整市场价格，边际成本交点决定最优产量。图中动态显示继续运营的亏损A与停产时承担的固定成本B。</desc>
+      </svg>
+    </section>
+
+    <div class="control-row">
+      <label for="priceSlider">精确选择 Pe</label>
+      <input id="priceSlider" type="range" min="8" max="40" step="0.05" value="12" aria-label="市场均衡价格 Pe">
+      <output id="sliderOutput" for="priceSlider">Pe = 12.0</output>
+    </div>
+
+    <div class="legend" aria-label="图例">
+      <span class="legend-item"><span class="swatch" style="background:var(--mc)"></span>MC</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--atc)"></span>ATC</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--avc)"></span>AVC</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--price)"></span>Pe = MR</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--area-a)"></span>A：运营亏损</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--area-b)"></span>B：整个蓝色边框区域 = FC</span>
+    </div>
+
+    <section class="notes">
+      <div class="note-card a"><strong>A 区域：</strong>企业按 q* 继续运营时的亏损，即总成本超过总收入的部分。</div>
+      <div class="note-card b"><strong>B 区域：</strong>蓝色边框内从 AVC 到 ATC 的完整矩形。其宽高会随 q* 改变，但面积恒等于固定成本 FC = 220。</div>
+    </section>
+  </main>
+
+  <script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 1000;
+      const H = 585;
+      const M = { left: 105, right: 60, top: 42, bottom: 72 };
+      const PW = W - M.left - M.right;
+      const PH = H - M.top - M.bottom;
+      const qMax = 40;
+      const costMax = 55;
+      const minPrice = 8;
+      const maxPrice = 40;
+
+      const FC = 220;
+      const a = 18;
+      const b = 0.8;
+      const c = 0.02;
+
+      const variableCost = q => a * q - b * q * q + c * q * q * q;
+      const totalCost = q => FC + variableCost(q);
+      const marginalCost = q => a - 2 * b * q + 3 * c * q * q;
+      const averageVariableCost = q => variableCost(q) / q;
+      const averageTotalCost = q => totalCost(q) / q;
+
+      const qAvcMin = b / (2 * c);
+      function findAtcMinimum() {
+        let lo = qAvcMin + 0.001;
+        let hi = qMax - 0.001;
+        for (let i = 0; i < 80; i += 1) {
+          const mid = (lo + hi) / 2;
+          if (marginalCost(mid) > averageTotalCost(mid)) hi = mid;
+          else lo = mid;
+        }
+        return (lo + hi) / 2;
+      }
+      const qAtcMin = findAtcMinimum();
+
+      const svg = document.getElementById("lossChart");
+      const slider = document.getElementById("priceSlider");
+      const fmt1 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+      const x = q => M.left + q / qMax * PW;
+      const y = value => M.top + (costMax - value) / costMax * PH;
+
+      function svgEl(name, attrs = {}, text = "") {
+        const el = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function setColoredText(el, parts) {
+        el.textContent = "";
+        for (const part of parts) {
+          el.appendChild(svgEl("tspan", { fill: part.fill || "var(--ink)" }, part.text));
+        }
+      }
+
+      function pathFor(start, end, step, yFn) {
+        const pts = [];
+        for (let q = start; q <= end + 0.0001; q += step) {
+          pts.push(`${pts.length ? "L" : "M"}${x(q).toFixed(2)},${yFn(q).toFixed(2)}`);
+        }
+        return pts.join(" ");
+      }
+
+      function addDefs() {
+        const defs = svgEl("defs");
+        const arrow = svgEl("marker", {
+          id: "arrow", markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5,
+          orient: "auto", markerUnits: "strokeWidth"
+        });
+        arrow.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "currentColor" }));
+        defs.appendChild(arrow);
+
+        const pattern = svgEl("pattern", {
+          id: "blueHatch", width: 10, height: 10, patternUnits: "userSpaceOnUse",
+          patternTransform: "rotate(35)"
+        });
+        pattern.appendChild(svgEl("rect", { width: 10, height: 10, fill: "var(--area-b-soft)" }));
+        pattern.appendChild(svgEl("line", {
+          x1: 0, y1: 0, x2: 0, y2: 10, stroke: "var(--area-b)", "stroke-width": 2, opacity: 0.32
+        }));
+        defs.appendChild(pattern);
+        svg.appendChild(defs);
+      }
+
+      function drawBase() {
+        addDefs();
+        svg.appendChild(svgEl("rect", { class: "frame", x: M.left, y: M.top, width: PW, height: PH }));
+
+        for (const q of [0, 10, 20, 30, 40]) {
+          const xx = x(q);
+          if (q > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: xx, y1: M.top, x2: xx, y2: M.top + PH }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: xx, y1: M.top + PH, x2: xx, y2: M.top + PH + 6 }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: xx, y: M.top + PH + 25, "text-anchor": "middle" }, String(q)));
+        }
+
+        for (const value of [0, 10, 20, 30, 40, 50]) {
+          const yy = y(value);
+          if (value > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: M.left, y1: yy, x2: M.left + PW, y2: yy }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: M.left - 6, y1: yy, x2: M.left, y2: yy }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: M.left - 11, y: yy + 4, "text-anchor": "end" }, String(value)));
+        }
+
+        svg.appendChild(svgEl("line", {
+          class: "axis", x1: M.left, y1: M.top + PH, x2: M.left + PW + 15,
+          y2: M.top + PH, "marker-end": "url(#arrow)"
+        }));
+        svg.appendChild(svgEl("line", {
+          class: "axis", x1: M.left, y1: M.top + PH, x2: M.left,
+          y2: M.top - 14, "marker-end": "url(#arrow)"
+        }));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left + PW + 23, y: M.top + PH + 6 }, "q"));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left - 8, y: M.top - 18, "text-anchor": "end" }, "Profit ($)"));
+      }
+
+      drawBase();
+
+      // Areas are created before curves so the curves remain visually dominant.
+      const areaB = svgEl("rect", { class: "area-b" });
+      const areaA = svgEl("rect", { class: "area-a" });
+      svg.appendChild(areaB);
+      svg.appendChild(areaA);
+
+      svg.appendChild(svgEl("path", {
+        class: "mc-path", d: pathFor(0, qMax, 0.12, q => y(marginalCost(q)))
+      }));
+      svg.appendChild(svgEl("path", {
+        class: "atc-path", d: pathFor(3.1, qMax, 0.12, q => y(Math.min(costMax, averageTotalCost(q))))
+      }));
+      svg.appendChild(svgEl("path", {
+        class: "avc-path", d: pathFor(0.15, qMax, 0.12, q => y(averageVariableCost(q)))
+      }));
+
+      svg.appendChild(svgEl("text", {
+        class: "annotation", x: x(37), y: y(marginalCost(37)) - 11, fill: "var(--mc)"
+      }, "MC"));
+      svg.appendChild(svgEl("text", {
+        class: "annotation", x: x(37), y: y(averageTotalCost(37)) - 11, fill: "var(--atc)"
+      }, "ATC"));
+      svg.appendChild(svgEl("text", {
+        class: "annotation", x: x(37), y: y(averageVariableCost(37)) + 22, fill: "var(--avc)"
+      }, "AVC"));
+
+      svg.appendChild(svgEl("circle", {
+        class: "minimum-point", cx: x(qAvcMin), cy: y(averageVariableCost(qAvcMin)),
+        r: 6, stroke: "var(--avc)"
+      }));
+      const avcMinimumLabel = svgEl("text", {
+        class: "annotation", x: x(qAvcMin) - 12, y: y(averageVariableCost(qAvcMin)) + 52,
+        "text-anchor": "end"
+      });
+      setColoredText(avcMinimumLabel, [
+        { text: "MC", fill: "var(--mc)" },
+        { text: " = " },
+        { text: "AVC", fill: "var(--avc)" },
+        { text: "（AVC最低点）", fill: "var(--avc)" }
+      ]);
+      svg.appendChild(avcMinimumLabel);
+      svg.appendChild(svgEl("circle", {
+        class: "minimum-point", cx: x(qAtcMin), cy: y(averageTotalCost(qAtcMin)),
+        r: 6, stroke: "var(--atc)"
+      }));
+      const atcMinimumLabel = svgEl("text", {
+        class: "annotation", x: x(qAtcMin) + 18, y: y(averageTotalCost(qAtcMin)) + 42,
+      });
+      setColoredText(atcMinimumLabel, [
+        { text: "MC", fill: "var(--mc)" },
+        { text: " = " },
+        { text: "ATC", fill: "var(--atc)" },
+        { text: "（ATC最低点）", fill: "var(--atc)" }
+      ]);
+      svg.appendChild(atcMinimumLabel);
+
+      const priceLine = svgEl("line", { class: "price-line" });
+      const qGuide = svgEl("line", { class: "guide" });
+      const mcPoint = svgEl("circle", { class: "mc-point", r: 8 });
+      const atcPoint = svgEl("circle", { class: "atc-point", r: 7 });
+      const avcPoint = svgEl("circle", { class: "avc-point", r: 7 });
+      const pricePill = svgEl("rect", { class: "pill-price", rx: 6, width: 94, height: 24 });
+      const priceText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const atcPill = svgEl("rect", { class: "pill-atc", rx: 6, width: 100, height: 24 });
+      const atcText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const avcPill = svgEl("rect", { class: "pill-avc", rx: 6, width: 100, height: 24 });
+      const avcText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const qPill = svgEl("rect", { class: "pill-q", rx: 6, width: 62, height: 24 });
+      const qText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const aLabel = svgEl("text", { class: "area-label", "text-anchor": "middle" });
+      const bLabel = svgEl("text", { class: "area-label", "text-anchor": "middle" });
+
+      const callout = svgEl("rect", { class: "callout", rx: 10, width: 228, height: 104 });
+      const calloutTitle = svgEl("text", { class: "callout-title" });
+      const calloutA = svgEl("text", { class: "callout-line", fill: "var(--area-a-stroke)" });
+      const calloutB = svgEl("text", { class: "callout-line", fill: "var(--area-b)" });
+      const calloutCheck = svgEl("text", { class: "callout-line" });
+
+      for (const el of [
+        priceLine, qGuide, pricePill, priceText, atcPill, atcText, avcPill, avcText,
+        qPill, qText, aLabel, bLabel, callout, calloutTitle, calloutA,
+        calloutB, calloutCheck, mcPoint, atcPoint, avcPoint
+      ]) svg.appendChild(el);
+
+      function optimalQuantity(price) {
+        const discriminant = 4 * b * b - 12 * c * (a - price);
+        return Math.min(qMax, (2 * b + Math.sqrt(Math.max(0, discriminant))) / (6 * c));
+      }
+
+      function update(rawPrice) {
+        const price = Math.max(minPrice, Math.min(maxPrice, Number(rawPrice)));
+        const qStar = optimalQuantity(price);
+        const atc = averageTotalCost(qStar);
+        const avc = averageVariableCost(qStar);
+        const areaAValue = (atc - price) * qStar;
+        const areaBValue = (atc - avc) * qStar;
+        const positiveProfit = areaAValue < -0.05;
+        const continueOperating = areaAValue < areaBValue - 0.05;
+        const indifferent = Math.abs(areaAValue - areaBValue) <= 0.05;
+
+        const xx = x(qStar);
+        const baseY = M.top + PH;
+        const pY = y(price);
+        const atcY = y(atc);
+        const avcY = y(avc);
+
+        areaB.setAttribute("x", M.left);
+        areaB.setAttribute("y", atcY);
+        areaB.setAttribute("width", Math.max(0, xx - M.left));
+        areaB.setAttribute("height", Math.max(0, avcY - atcY));
+
+        areaA.setAttribute("x", M.left);
+        areaA.setAttribute("y", Math.min(atcY, pY));
+        areaA.setAttribute("width", Math.max(0, xx - M.left));
+        areaA.setAttribute("height", Math.abs(pY - atcY));
+        areaA.setAttribute("class", `area-a${positiveProfit ? " profit" : ""}`);
+
+        priceLine.setAttribute("x1", M.left);
+        priceLine.setAttribute("y1", pY);
+        priceLine.setAttribute("x2", M.left + PW);
+        priceLine.setAttribute("y2", pY);
+        qGuide.setAttribute("x1", xx);
+        qGuide.setAttribute("y1", atcY);
+        qGuide.setAttribute("x2", xx);
+        qGuide.setAttribute("y2", baseY);
+
+        mcPoint.setAttribute("cx", xx);
+        mcPoint.setAttribute("cy", pY);
+        atcPoint.setAttribute("cx", xx);
+        atcPoint.setAttribute("cy", atcY);
+        avcPoint.setAttribute("cx", xx);
+        avcPoint.setAttribute("cy", avcY);
+
+        pricePill.setAttribute("x", M.left - 100);
+        pricePill.setAttribute("y", pY - 12);
+        priceText.setAttribute("x", M.left - 53);
+        priceText.setAttribute("y", pY + 4);
+        priceText.textContent = `Pe = ${fmt1.format(price)}`;
+
+        atcPill.setAttribute("x", M.left - 104);
+        atcPill.setAttribute("y", atcY - 12);
+        atcText.setAttribute("x", M.left - 54);
+        atcText.setAttribute("y", atcY + 4);
+        atcText.textContent = `ATC = ${fmt1.format(atc)}`;
+
+        avcPill.setAttribute("x", M.left - 104);
+        avcPill.setAttribute("y", avcY - 12);
+        avcText.setAttribute("x", M.left - 54);
+        avcText.setAttribute("y", avcY + 4);
+        avcText.textContent = `AVC = ${fmt1.format(avc)}`;
+
+        qPill.setAttribute("x", xx - 31);
+        qPill.setAttribute("y", baseY + 8);
+        qText.setAttribute("x", xx);
+        qText.setAttribute("y", baseY + 24);
+        qText.textContent = fmt1.format(qStar);
+
+        aLabel.setAttribute("x", M.left + (xx - M.left) * 0.48);
+        aLabel.setAttribute("y", Math.min(atcY, pY) + Math.abs(pY - atcY) / 2 + 5);
+        aLabel.setAttribute("fill", positiveProfit ? "var(--profit-area)" : "var(--area-a-stroke)");
+        aLabel.textContent = positiveProfit
+          ? `Profit = ${fmt1.format(Math.abs(areaAValue))}`
+          : `A = ${fmt1.format(areaAValue)}`;
+
+        const lowerRoom = avcY - pY;
+        bLabel.setAttribute("x", M.left + (xx - M.left) * 0.48);
+        bLabel.setAttribute("y", lowerRoom > 29 ? pY + lowerRoom / 2 + 5 : avcY + 23);
+        bLabel.setAttribute("fill", "var(--area-b)");
+        bLabel.textContent = `B = FC = ${fmt1.format(areaBValue)}`;
+
+        const calloutX = M.left + PW - 247;
+        const calloutY = M.top + 18;
+        callout.setAttribute("x", calloutX);
+        callout.setAttribute("y", calloutY);
+        calloutTitle.setAttribute("x", calloutX + 13);
+        calloutTitle.setAttribute("y", calloutY + 22);
+        if (positiveProfit) {
+          setColoredText(calloutTitle, [
+            { text: "价格高于 " },
+            { text: "ATC", fill: "var(--atc)" },
+            { text: "：企业获得利润" }
+          ]);
+        } else {
+          calloutTitle.textContent = continueOperating
+            ? "继续运营可减少亏损"
+            : (indifferent ? "处于停产临界点" : "停产损失更小");
+        }
+        calloutA.setAttribute("x", calloutX + 13);
+        calloutA.setAttribute("y", calloutY + 48);
+        if (positiveProfit) {
+          setColoredText(calloutA, [
+            { text: "π = ", fill: "var(--profit-area)" },
+            { text: "(", fill: "var(--profit-area)" },
+            { text: "Pe", fill: "var(--price)" },
+            { text: " − ", fill: "var(--profit-area)" },
+            { text: "ATC", fill: "var(--atc)" },
+            { text: `) × q* = ${fmt1.format(Math.abs(areaAValue))}`, fill: "var(--profit-area)" }
+          ]);
+        } else {
+          setColoredText(calloutA, [
+            { text: "A = ", fill: "var(--area-a-stroke)" },
+            { text: "(", fill: "var(--area-a-stroke)" },
+            { text: "ATC", fill: "var(--atc)" },
+            { text: " − ", fill: "var(--area-a-stroke)" },
+            { text: "Pe", fill: "var(--price)" },
+            { text: `) × q* = ${fmt1.format(areaAValue)}`, fill: "var(--area-a-stroke)" }
+          ]);
+        }
+        calloutB.setAttribute("x", calloutX + 13);
+        calloutB.setAttribute("y", calloutY + 72);
+        setColoredText(calloutB, [
+          { text: "B = ", fill: "var(--area-b)" },
+          { text: "(", fill: "var(--area-b)" },
+          { text: "ATC", fill: "var(--atc)" },
+          { text: " − ", fill: "var(--area-b)" },
+          { text: "AVC", fill: "var(--avc)" },
+          { text: `) × q* = ${fmt1.format(areaBValue)}`, fill: "var(--area-b)" }
+        ]);
+        calloutCheck.setAttribute("x", calloutX + 13);
+        calloutCheck.setAttribute("y", calloutY + 94);
+        calloutCheck.setAttribute("fill", continueOperating ? "var(--continue)" : (indifferent ? "var(--ink)" : "var(--shutdown)"));
+        calloutCheck.textContent = positiveProfit
+          ? "π > 0 → 继续运营"
+          : (continueOperating ? "A < B → 继续运营" : (indifferent ? "A = B → 无差异" : "A > B → 停产"));
+
+        document.getElementById("priceValue").textContent = fmt1.format(price);
+        document.getElementById("qValue").textContent = fmt1.format(qStar);
+        document.getElementById("atcValue").textContent = fmt1.format(atc);
+        document.getElementById("avcValue").textContent = fmt1.format(avc);
+        document.getElementById("aReadoutLabel").textContent = positiveProfit ? "π：运营利润" : "A：运营亏损";
+        document.getElementById("aValue").textContent = fmt1.format(Math.abs(areaAValue));
+        document.getElementById("aValue").style.color = positiveProfit ? "var(--profit-area)" : "var(--area-a-stroke)";
+        document.getElementById("bValue").textContent = fmt1.format(areaBValue);
+        document.getElementById("sliderOutput").textContent = `Pe = ${fmt1.format(price)}`;
+        slider.value = price.toFixed(2);
+      }
+
+      const hit = svgEl("rect", {
+        class: "hit-area", x: M.left - 8, y: M.top - 8,
+        width: PW + 16, height: PH + 16,
+        "aria-label": "上下移动鼠标调整市场均衡价格"
+      });
+      svg.appendChild(hit);
+
+      function priceFromPointer(event) {
+        const bounds = svg.getBoundingClientRect();
+        const svgY = (event.clientY - bounds.top) / bounds.height * H;
+        return (M.top + PH - svgY) / PH * costMax;
+      }
+
+      hit.addEventListener("pointermove", event => update(priceFromPointer(event)));
+      hit.addEventListener("pointerdown", event => {
+        hit.setPointerCapture(event.pointerId);
+        update(priceFromPointer(event));
+      });
+      hit.addEventListener("pointerup", event => {
+        if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
+      });
+      slider.addEventListener("input", event => update(event.target.value));
+
+      update(12);
+    })();
+  </script>
+</body>
+</html>

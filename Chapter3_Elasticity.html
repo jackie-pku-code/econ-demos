@@ -1,0 +1,458 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>需求曲线与总收入互动演示</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #607089;
+      --line: #d8e0ea;
+      --grid: #dfe5ec;
+      --paper: #ffffff;
+      --page: #f4f7fb;
+      --demand: #69aF35;
+      --revenue: #e43d30;
+      --active: #2563eb;
+      --active-soft: rgba(37, 99, 235, 0.17);
+      --elastic: #dff3e1;
+      --unit: #fff1bf;
+      --inelastic: #fee3df;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1440px, calc(100% - 32px));
+      margin: 22px auto;
+      padding: 28px 30px 24px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 16px 50px rgba(31, 48, 73, 0.09);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1.14;
+      letter-spacing: -0.025em;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 10px 0 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: 0.86fr 0.86fr 0.96fr 0.96fr 1.36fr;
+      gap: 10px;
+      margin: 0 auto 20px;
+      max-width: 1080px;
+    }
+
+    .readout {
+      min-height: 72px;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfcfe;
+    }
+
+    .readout .label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .readout .value {
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #trValue { color: var(--revenue); }
+    #elasticityValue {
+      font-size: clamp(16px, 1.35vw, 19px);
+      white-space: nowrap;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .frame { fill: #fff; stroke: var(--line); stroke-width: 1; }
+    .grid-line { stroke: var(--grid); stroke-width: 1; stroke-dasharray: 4 5; }
+    .axis { stroke: var(--ink); stroke-width: 1.8; }
+    .tick { stroke: var(--ink); stroke-width: 1.2; }
+    .tick-label, .axis-label, .annotation, .point-label {
+      fill: var(--ink);
+      font-family: Inter, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .tick-label { font-size: 13px; }
+    .axis-label { font-size: 17px; font-weight: 700; }
+    .annotation { font-size: 14px; font-weight: 650; }
+    .point-label { font-size: 13px; font-weight: 700; }
+    .demand-path { fill: none; stroke: var(--demand); stroke-width: 5; stroke-linecap: round; }
+    .tr-path { fill: none; stroke: var(--revenue); stroke-width: 5; stroke-linecap: round; }
+    .guide { stroke: var(--active); stroke-width: 1.6; stroke-dasharray: 6 5; }
+    .tr-guide { stroke: var(--revenue); stroke-width: 1.6; stroke-dasharray: 6 5; }
+    .revenue-rect { fill: var(--active-soft); stroke: var(--active); stroke-width: 1.5; }
+    .active-point { fill: var(--active); stroke: #fff; stroke-width: 4; }
+    .tr-point { fill: var(--revenue); stroke: #fff; stroke-width: 4; }
+    .max-point { fill: var(--ink); stroke: #fff; stroke-width: 3; }
+    .hit-area { fill: transparent; cursor: ew-resize; }
+    .axis-pill { fill: var(--active); }
+    .axis-pill-tr { fill: var(--revenue); }
+    .pill-text { fill: #fff; font-size: 12px; font-weight: 700; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
+    .region-label { fill: var(--muted); font-size: 13px; font-weight: 650; font-family: Inter, "Microsoft YaHei", Arial, sans-serif; }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: auto minmax(180px, 720px) auto;
+      gap: 12px;
+      align-items: center;
+      max-width: 900px;
+      margin: 14px auto 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-row label, .control-row output {
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--active);
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      main { width: min(100% - 18px, 720px); padding: 22px 16px; }
+      .readouts { grid-template-columns: repeat(3, 1fr); }
+      .elasticity-readout { grid-column: span 2; }
+      .charts { grid-template-columns: 1fr; gap: 20px; }
+    }
+
+    @media (max-width: 560px) {
+      .readouts { grid-template-columns: repeat(2, 1fr); }
+      .elasticity-readout { grid-column: 1 / -1; }
+      .control-row { grid-template-columns: 1fr auto; }
+      .control-row input { grid-column: 1 / -1; grid-row: 2; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .active-point, .tr-point, .guide, .tr-guide, .revenue-rect, .axis-pill, .axis-pill-tr, .pill-text {
+        transition: 80ms linear;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Demand, Elasticity, MR, and Total Revenue</h1>
+    <p class="subtitle">在左侧图中移动鼠标，观察价格、销量、边际收益和总收入如何同步变化</p>
+
+    <section class="readouts" aria-label="当前数值" aria-live="polite">
+      <div class="readout"><span class="label">销量 Q</span><span class="value" id="qValue">10.0</span></div>
+      <div class="readout"><span class="label">价格 P</span><span class="value" id="pValue">80.0</span></div>
+      <div class="readout"><span class="label">总收入 TR</span><span class="value" id="trValue">800</span></div>
+      <div class="readout"><span class="label">边际收益 MR</span><span class="value" id="mrValue">60.0</span></div>
+      <div class="readout elasticity-readout"><span class="label">需求弹性</span><span class="value" id="elasticityValue">弹性区间</span></div>
+    </section>
+
+    <section class="charts">
+      <div class="panel">
+        <h2>需求曲线与收入矩形</h2>
+        <svg id="demandChart" viewBox="0 0 620 430" role="img" aria-labelledby="demandTitle demandDesc">
+          <title id="demandTitle">线性需求曲线</title>
+          <desc id="demandDesc">价格从一百下降到零，销量从零增加到五十。蓝色点随鼠标水平位置沿需求曲线移动，蓝色矩形表示当前总收入。</desc>
+        </svg>
+      </div>
+      <div class="panel">
+        <h2>总收入曲线</h2>
+        <svg id="trChart" viewBox="0 0 620 430" role="img" aria-labelledby="trTitle trDesc">
+          <title id="trTitle">总收入曲线</title>
+          <desc id="trDesc">总收入等于价格乘以销量，在销量二十五时达到最大值一千二百五十。红色点与左侧需求曲线上的选择同步移动。</desc>
+        </svg>
+      </div>
+    </section>
+
+    <div class="control-row">
+      <label for="quantitySlider">精确选择销量</label>
+      <input id="quantitySlider" type="range" min="0" max="50" step="0.1" value="10" aria-label="销量 Q">
+      <output id="sliderOutput" for="quantitySlider">Q = 10.0</output>
+    </div>
+    <p class="hint">线性需求：P = 100 − 2Q　　总收入：TR = P × Q　　最大总收入出现在 Q = 25</p>
+  </main>
+
+  <script>
+    /* ===== 在线访问锁（由 scripts/deploy.ps1 自动注入，请勿手动修改） ===== */
+    if (
+      location.protocol === "file:" ||
+      ["jackiewang.site", "www.jackiewang.site", "econ-demos.pages.dev",
+       "localhost", "127.0.0.1"].indexOf(location.hostname) === -1
+    ) {
+      document.body.innerHTML =
+        "<div style='font-size:19px;font-weight:700'>本页面仅限在线访问</div>" +
+        "<div style='margin-top:10px;font-size:15px;color:#607089'>请在浏览器中打开 jackiewang.site</div>";
+      document.body.setAttribute(
+        "style",
+        "margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "min-height:100vh;text-align:center;padding:0 24px;color:#33445c;background:#eef3f8;" +
+        "font-family:'Segoe UI','Microsoft YaHei',sans-serif"
+      );
+      throw new Error("BLOCKED_OFFLINE");
+    }
+    /* 署名角标 */
+    {
+      var _badge = document.createElement("div");
+      _badge.textContent = "© 经济学交互演示 · jackiewang.site";
+      _badge.style.cssText =
+        "position:fixed;right:10px;bottom:8px;z-index:9999;pointer-events:none;" +
+        "font:12px/1.5 'Microsoft YaHei',sans-serif;color:#8b98ae;background:rgba(255,255,255,.78);" +
+        "border:1px solid rgba(0,0,0,.06);padding:3px 10px;border-radius:999px";
+      document.body.appendChild(_badge);
+    }
+    /* ===== 在线访问锁结束 ===== */
+    (() => {
+      "use strict";
+
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 620, H = 430;
+      const M = { left: 68, right: 30, top: 36, bottom: 66 };
+      const PW = W - M.left - M.right;
+      const PH = H - M.top - M.bottom;
+      const maxQ = 50, maxP = 105, maxTR = 1320;
+      const demandSvg = document.getElementById("demandChart");
+      const trSvg = document.getElementById("trChart");
+      const slider = document.getElementById("quantitySlider");
+      const fmt1 = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      const fmt0 = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
+
+      const x = q => M.left + q / maxQ * PW;
+      const yP = p => M.top + (maxP - p) / maxP * PH;
+      const yTR = tr => M.top + (maxTR - tr) / maxTR * PH;
+      const price = q => 100 - 2 * q;
+      const revenue = q => q * price(q);
+      const mr = q => 100 - 4 * q;
+
+      function svgEl(name, attrs = {}, text = "") {
+        const el = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function linePath(points, yFn) {
+        return points.map((q, i) => `${i ? "L" : "M"}${x(q).toFixed(2)},${yFn(q).toFixed(2)}`).join(" ");
+      }
+
+      function addArrowMarker(svg, id) {
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", { id, markerWidth: 8, markerHeight: 8, refX: 6, refY: 3.5, orient: "auto", markerUnits: "strokeWidth" });
+        marker.appendChild(svgEl("path", { d: "M0,0 L0,7 L7,3.5 z", fill: "#172033" }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+      }
+
+      function drawBase(svg, yTicks, yScale, yLabel, markerId) {
+        addArrowMarker(svg, markerId);
+        svg.appendChild(svgEl("rect", { class: "frame", x: M.left, y: M.top, width: PW, height: PH }));
+
+        for (const q of [0, 10, 20, 25, 30, 40, 50]) {
+          const xx = x(q);
+          if (q > 0 && q < 50) svg.appendChild(svgEl("line", { class: "grid-line", x1: xx, y1: M.top, x2: xx, y2: M.top + PH }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: xx, y1: M.top + PH, x2: xx, y2: M.top + PH + 6 }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: xx, y: M.top + PH + 25, "text-anchor": "middle" }, String(q)));
+        }
+
+        for (const value of yTicks) {
+          const yy = yScale(value);
+          if (value > 0) svg.appendChild(svgEl("line", { class: "grid-line", x1: M.left, y1: yy, x2: M.left + PW, y2: yy }));
+          svg.appendChild(svgEl("line", { class: "tick", x1: M.left - 6, y1: yy, x2: M.left, y2: yy }));
+          svg.appendChild(svgEl("text", { class: "tick-label", x: M.left - 11, y: yy + 5, "text-anchor": "end" }, fmt0.format(value)));
+        }
+
+        svg.appendChild(svgEl("line", { class: "axis", x1: M.left, y1: M.top + PH, x2: M.left + PW + 15, y2: M.top + PH, "marker-end": `url(#${markerId})` }));
+        svg.appendChild(svgEl("line", { class: "axis", x1: M.left, y1: M.top + PH, x2: M.left, y2: M.top - 14, "marker-end": `url(#${markerId})` }));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left + PW + 23, y: M.top + PH + 6 }, "Q"));
+        svg.appendChild(svgEl("text", { class: "axis-label", x: M.left - 8, y: M.top - 19, "text-anchor": "end" }, yLabel));
+      }
+
+      function addRegionLabels(svg) {
+        const y = M.top + PH + 50;
+        svg.appendChild(svgEl("text", { class: "region-label", x: x(12.5), y, "text-anchor": "middle" }, "弹性区间"));
+        svg.appendChild(svgEl("text", { class: "region-label", x: x(25), y, "text-anchor": "middle" }, "单位弹性"));
+        svg.appendChild(svgEl("text", { class: "region-label", x: x(37.5), y, "text-anchor": "middle" }, "缺乏弹性区间"));
+      }
+
+      drawBase(demandSvg, [0, 20, 40, 60, 80, 100], yP, "P", "arrow-demand");
+      drawBase(trSvg, [0, 400, 800, 1200], yTR, "TR", "arrow-tr");
+      addRegionLabels(demandSvg);
+      addRegionLabels(trSvg);
+
+      demandSvg.appendChild(svgEl("path", { class: "demand-path", d: `M${x(0)},${yP(100)} L${x(50)},${yP(0)}` }));
+      demandSvg.appendChild(svgEl("text", { class: "annotation", x: x(43), y: yP(21), fill: "#69af35" }, "D"));
+
+      const qs = Array.from({ length: 201 }, (_, i) => i * 0.25);
+      trSvg.appendChild(svgEl("path", { class: "tr-path", d: linePath(qs, q => yTR(revenue(q))) }));
+      trSvg.appendChild(svgEl("circle", { class: "max-point", cx: x(25), cy: yTR(1250), r: 6 }));
+      trSvg.appendChild(svgEl("text", { class: "annotation", x: x(25), y: yTR(1250) - 18, "text-anchor": "middle" }, "最大 TR = 1,250"));
+
+      const rect = svgEl("rect", { class: "revenue-rect" });
+      const dV = svgEl("line", { class: "guide" });
+      const dH = svgEl("line", { class: "guide" });
+      const dPoint = svgEl("circle", { class: "active-point", r: 8 });
+      const dLabel = svgEl("text", { class: "point-label", "text-anchor": "start" });
+      const dQPill = svgEl("rect", { class: "axis-pill", rx: 6, width: 54, height: 23 });
+      const dQText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const dPPill = svgEl("rect", { class: "axis-pill", rx: 6, width: 55, height: 23 });
+      const dPText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      for (const el of [rect, dV, dH, dQPill, dQText, dPPill, dPText, dPoint, dLabel]) demandSvg.appendChild(el);
+
+      const tV = svgEl("line", { class: "tr-guide" });
+      const tH = svgEl("line", { class: "tr-guide" });
+      const tPoint = svgEl("circle", { class: "tr-point", r: 8 });
+      const tLabel = svgEl("text", { class: "point-label", "text-anchor": "start" });
+      const tQPill = svgEl("rect", { class: "axis-pill-tr", rx: 6, width: 54, height: 23 });
+      const tQText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      const tTRPill = svgEl("rect", { class: "axis-pill-tr", rx: 6, width: 68, height: 23 });
+      const tTRText = svgEl("text", { class: "pill-text", "text-anchor": "middle" });
+      for (const el of [tV, tH, tQPill, tQText, tTRPill, tTRText, tPoint, tLabel]) trSvg.appendChild(el);
+
+      function elasticityInfo(q, p) {
+        if (q < 0.05) return { text: "完全弹性端点", numeric: "∞" };
+        const e = p / (2 * q);
+        if (Math.abs(q - 25) <= 0.15) return { text: "单位弹性", numeric: "1.00" };
+        if (q < 25) return { text: "弹性区间", numeric: e.toFixed(2) };
+        return { text: "缺乏弹性区间", numeric: e.toFixed(2) };
+      }
+
+      function update(rawQ) {
+        const q = Math.max(0, Math.min(50, Number(rawQ)));
+        const p = price(q);
+        const tr = revenue(q);
+        const marginal = mr(q);
+        const info = elasticityInfo(q, p);
+        const xx = x(q), py = yP(p), ty = yTR(tr), baseY = M.top + PH;
+
+        rect.setAttribute("x", x(0));
+        rect.setAttribute("y", py);
+        rect.setAttribute("width", Math.max(0, xx - x(0)));
+        rect.setAttribute("height", Math.max(0, baseY - py));
+        for (const [el, attrs] of [
+          [dV, { x1: xx, y1: py, x2: xx, y2: baseY }],
+          [dH, { x1: M.left, y1: py, x2: xx, y2: py }],
+          [dPoint, { cx: xx, cy: py }],
+          [tV, { x1: xx, y1: ty, x2: xx, y2: baseY }],
+          [tH, { x1: M.left, y1: ty, x2: xx, y2: ty }],
+          [tPoint, { cx: xx, cy: ty }]
+        ]) for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+
+        const dAnchorLeft = q > 39;
+        dLabel.setAttribute("x", xx + (dAnchorLeft ? -12 : 12));
+        dLabel.setAttribute("y", Math.max(M.top + 18, py - 13));
+        dLabel.setAttribute("text-anchor", dAnchorLeft ? "end" : "start");
+        dLabel.textContent = `P = ${fmt1.format(p)}`;
+
+        const tAnchorLeft = q > 38;
+        tLabel.setAttribute("x", xx + (tAnchorLeft ? -12 : 12));
+        tLabel.setAttribute("y", Math.max(M.top + 18, ty - 13));
+        tLabel.setAttribute("text-anchor", tAnchorLeft ? "end" : "start");
+        tLabel.textContent = `TR = ${fmt0.format(tr)}`;
+
+        dQPill.setAttribute("x", xx - 27); dQPill.setAttribute("y", baseY + 7);
+        dQText.setAttribute("x", xx); dQText.setAttribute("y", baseY + 23); dQText.textContent = fmt1.format(q);
+        dPPill.setAttribute("x", M.left - 61); dPPill.setAttribute("y", py - 11.5);
+        dPText.setAttribute("x", M.left - 33.5); dPText.setAttribute("y", py + 4); dPText.textContent = fmt1.format(p);
+        tQPill.setAttribute("x", xx - 27); tQPill.setAttribute("y", baseY + 7);
+        tQText.setAttribute("x", xx); tQText.setAttribute("y", baseY + 23); tQText.textContent = fmt1.format(q);
+        tTRPill.setAttribute("x", M.left - 75); tTRPill.setAttribute("y", ty - 11.5);
+        tTRText.setAttribute("x", M.left - 41); tTRText.setAttribute("y", ty + 4); tTRText.textContent = fmt0.format(tr);
+
+        document.getElementById("qValue").textContent = fmt1.format(q);
+        document.getElementById("pValue").textContent = fmt1.format(p);
+        document.getElementById("trValue").textContent = fmt0.format(tr);
+        document.getElementById("mrValue").textContent = fmt1.format(marginal);
+        document.getElementById("elasticityValue").textContent = `${info.text}  |ε|=${info.numeric}`;
+        document.getElementById("sliderOutput").textContent = `Q = ${fmt1.format(q)}`;
+        slider.value = q.toFixed(1);
+      }
+
+      const hit = svgEl("rect", { class: "hit-area", x: M.left - 8, y: M.top - 8, width: PW + 16, height: PH + 16, "aria-label": "移动鼠标选择销量" });
+      demandSvg.appendChild(hit);
+
+      function qFromPointer(event) {
+        const bounds = demandSvg.getBoundingClientRect();
+        const svgX = (event.clientX - bounds.left) / bounds.width * W;
+        return (svgX - M.left) / PW * maxQ;
+      }
+
+      hit.addEventListener("pointermove", event => update(qFromPointer(event)));
+      hit.addEventListener("pointerdown", event => {
+        hit.setPointerCapture(event.pointerId);
+        update(qFromPointer(event));
+      });
+      hit.addEventListener("pointerup", event => {
+        if (hit.hasPointerCapture(event.pointerId)) hit.releasePointerCapture(event.pointerId);
+      });
+      slider.addEventListener("input", event => update(event.target.value));
+
+      update(10);
+    })();
+  </script>
+</body>
+</html>
