@@ -1,0 +1,2 @@
+# Exact site root only. No splat: /economics/ and other real files must not be redirected.
+/ /teaching/econ-demos/ 302

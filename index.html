@@ -4,15 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Redirecting…</title>
-  <meta http-equiv="refresh" content="0; url=/teaching/econ-demos/">
   <link rel="canonical" href="/teaching/econ-demos/">
-  <script>location.replace("/teaching/econ-demos/");</script>
+  <script>
+    // Redirect only the site root. Do not redirect other paths: Pages may
+    // serve this file for a missing route, and /economics/ must stay put.
+    (function () {
+      var path = location.pathname;
+      if (path === "/" || path === "/index.html") {
+        location.replace("/teaching/econ-demos/");
+      }
+    })();
+  </script>
   <style>
     body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
            background:#eef3f8; color:#607089; font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:15px; }
+    a { color:#1f4b99; }
   </style>
 </head>
 <body>
-  <p>正在前往 <a href="/teaching/econ-demos/">/teaching/econ-demos/</a> …</p>
+  <p id="msg">正在前往 <a href="/teaching/econ-demos/">/teaching/econ-demos/</a> …</p>
+  <script>
+    (function () {
+      var path = location.pathname;
+      if (path !== "/" && path !== "/index.html") {
+        document.getElementById("msg").innerHTML =
+          '未找到该页面。<a href="/economics/">微观经济学课程</a> · <a href="/teaching/econ-demos/">交互演示</a>';
+      }
+    })();
+  </script>
 </body>
 </html>

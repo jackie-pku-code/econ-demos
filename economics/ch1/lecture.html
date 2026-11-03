@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第一章 · 意愿支付与需求</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* === VIEWPORT BASE (mandatory fixed 16:9 stage) === */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--stage-bg, #0c1512);
+}
+.deck-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--stage-bg, #0c1512);
+}
+.deck-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: var(--slide-bg, #e9ecea);
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.slide.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+.deck-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.deck-controls:hover, .deck-controls:focus-within { opacity: 1; }
+.deck-controls audio { height: 36px; width: 420px; display: block; }
+@media print {
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .deck-viewport { position: static; overflow: visible; }
+  .deck-stage { position: static; width: auto; height: auto; transform: none !important; }
+  .slide { position: relative; visibility: visible !important; opacity: 1 !important; break-after: page; }
+  .deck-controls { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .rv { opacity: 1 !important; transform: none !important; }
+}
+
+/* === DESIGN SYSTEM: 方格账本 · 松石墨绿 + 琥珀 (ledger grid, deep spruce, amber) === */
+:root {
+  --stage-bg: #0c1512;
+  --slide-bg: #e9ecea;
+  --bg: #e9ecea;
+  --bg2: #dde3df;
+  --ink: #12211c;
+  --soft: #3d5048;
+  --mute: #7b8c85;
+  --rule: #b9c5bf;
+  --spruce: #0f3d33;
+  --spruce2: #174d41;
+  --amber: #d98a14;
+  --amber-d: #a8650a;
+  --mist: #cfe0d8;
+  --serif: "Noto Serif SC", "Songti SC", serif;
+  --en: "Fraunces", "Noto Serif SC", serif;
+  --mono: "IBM Plex Mono", "Consolas", monospace;
+}
+
+.slide {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: 0 0;
+  color: var(--ink);
+  font-family: var(--serif);
+}
+/* fade the grid toward the center so text sits on calm paper */
+.slide::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 65% at 55% 50%, var(--bg) 35%, rgba(233,236,234,0.35) 100%);
+  z-index: 0;
+}
+.slide.dark {
+  background-color: var(--spruce);
+  background-image:
+    linear-gradient(rgba(207,224,216,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(207,224,216,0.08) 1px, transparent 1px);
+  color: #eef4f0;
+}
+.slide.dark::before {
+  background: radial-gradient(ellipse 70% 65% at 55% 50%, var(--spruce) 35%, rgba(15,61,51,0.3) 100%);
+}
+
+/* left spine: chapter number + vertical label */
+.spine {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 200px;
+  border-right: 2px solid var(--ink);
+  z-index: 2;
+  background: var(--bg2);
+}
+.dark .spine { background: #0b3028; border-color: var(--amber); }
+.spine .no {
+  position: absolute; top: 56px; left: 0; right: 0; text-align: center;
+  font-family: var(--en); font-weight: 600; font-size: 84px; line-height: 1;
+  color: var(--spruce);
+}
+.dark .spine .no { color: var(--amber); }
+.spine .no::after {
+  content: ""; display: block; width: 44px; height: 4px; background: var(--amber);
+  margin: 22px auto 0;
+}
+.spine .vt {
+  position: absolute; left: 0; right: 0; bottom: 120px; text-align: center;
+  writing-mode: vertical-rl; margin: 0 auto;
+  font-family: var(--mono); font-size: 20px; letter-spacing: 0.4em; color: var(--mute);
+  text-transform: uppercase;
+}
+
+.body {
+  position: absolute; left: 200px; right: 0; top: 0; bottom: 0;
+  padding: 120px 150px 130px 130px;
+  z-index: 2;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.tag {
+  font-family: var(--mono); font-size: 22px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--amber-d); margin: 0 0 30px; display: flex; align-items: center; gap: 18px;
+}
+.dark .tag { color: var(--amber); }
+.tag::before { content: ""; width: 56px; height: 2px; background: currentColor; }
+
+h1, h2 { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--spruce); letter-spacing: 0.01em; }
+.dark h1, .dark h2 { color: #fff; }
+h1.xl { font-size: 128px; line-height: 1.12; }
+h1.lg { font-size: 104px; line-height: 1.15; }
+h1.md { font-size: 84px; line-height: 1.2; }
+h2.t { font-size: 62px; line-height: 1.3; font-weight: 600; }
+em.en, .en { font-family: var(--en); font-style: italic; font-weight: 400; }
+mark { background: none; color: inherit; box-shadow: inset 0 -0.32em 0 rgba(217,138,20,0.38); padding: 0 0.04em; }
+.dark mark { box-shadow: inset 0 -0.32em 0 rgba(217,138,20,0.55); }
+.lead { font-size: 44px; line-height: 1.55; color: var(--soft); margin: 44px 0 0; font-weight: 400; max-width: 1350px; }
+.dark .lead { color: #cfe0d8; }
+.lead b { color: var(--ink); font-weight: 600; }
+.dark .lead b { color: #fff; }
+.note { font-family: var(--en); font-style: italic; font-size: 34px; color: var(--mute); margin: 36px 0 0; line-height: 1.5; }
+.dark .note { color: #8fb3a5; }
+
+/* numbered list */
+.list { list-style: none; margin: 56px 0 0; padding: 0; counter-reset: n; }
+.list li {
+  counter-increment: n; position: relative;
+  font-size: 56px; line-height: 1.35; font-weight: 600; color: var(--ink);
+  padding: 22px 0 22px 120px; border-top: 1px solid var(--rule);
+}
+.list li:last-child { border-bottom: 1px solid var(--rule); }
+.list li::before {
+  content: "0" counter(n); position: absolute; left: 0; top: 30px;
+  font-family: var(--en); font-weight: 600; font-size: 48px; color: var(--amber-d);
+}
+.list li small { display: block; font-size: 28px; font-weight: 400; color: var(--mute); margin-top: 2px; }
+.dark .list li { color: #fff; border-color: rgba(207,224,216,0.25); }
+.dark .list li::before { color: var(--amber); }
+
+/* tiles */
+.tiles { display: grid; gap: 0; margin-top: 64px; border: 2px solid var(--ink); background: #f6f8f7; }
+.tiles.c3 { grid-template-columns: repeat(3, 1fr); }
+.tiles.c2 { grid-template-columns: repeat(2, 1fr); }
+.tiles.c4 { grid-template-columns: repeat(2, 1fr); }
+.tile { padding: 44px 44px 48px; border-right: 2px solid var(--ink); position: relative; }
+.tile:last-child { border-right: 0; }
+.tiles.c4 .tile:nth-child(2n) { border-right: 0; }
+.tiles.c4 .tile:nth-child(-n+2) { border-bottom: 2px solid var(--ink); }
+.tile .k { font-family: var(--mono); font-size: 20px; letter-spacing: 0.2em; color: var(--amber-d); margin: 0 0 16px; }
+.tile .w { font-size: 72px; font-weight: 900; color: var(--spruce); line-height: 1.1; margin: 0; }
+.tile .e { font-family: var(--en); font-style: italic; font-size: 34px; color: var(--mute); margin: 10px 0 0; }
+.tile .d { font-size: 36px; line-height: 1.45; color: var(--soft); margin: 14px 0 0; }
+.tile .h { font-size: 42px; font-weight: 600; color: var(--spruce); margin: 0; line-height: 1.3; }
+.tile.hi { background: var(--spruce); }
+.tile.hi .w, .tile.hi .h { color: #fff; }
+.tile.hi .e, .tile.hi .d { color: #b9d3c8; }
+.tile.hi .k { color: var(--amber); }
+
+/* topic strips */
+.strips { margin-top: 56px; display: flex; flex-wrap: wrap; gap: 22px 26px; }
+.strip {
+  font-size: 46px; font-weight: 600; padding: 18px 36px;
+  background: #f6f8f7; border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); color: var(--ink);
+}
+.strip.hi { background: var(--amber); box-shadow: 8px 8px 0 var(--spruce); border-color: var(--spruce); }
+
+/* flow */
+.flow { display: flex; align-items: stretch; margin-top: 70px; }
+.flow .n { flex: 1; background: #f6f8f7; border: 2px solid var(--ink); padding: 48px 20px; text-align: center; }
+.flow .n b { display: block; font-size: 76px; font-weight: 900; color: var(--spruce); }
+.flow .n span { font-size: 30px; color: var(--soft); display: block; margin-top: 10px; }
+.flow .n.last { background: var(--spruce); }
+.flow .n.last b { color: #fff; }
+.flow .n.last span { color: #b9d3c8; }
+.flow .ar { flex: 0 0 110px; display: flex; align-items: center; justify-content: center; }
+.flow .ar svg { width: 90px; height: 24px; }
+
+/* broken-window slides */
+.bw { display: flex; align-items: stretch; margin-top: 48px; }
+.bw .s { flex: 1; border: 2px solid var(--amber); background: rgba(11,48,40,0.7); padding: 36px 16px; text-align: center; }
+.bw .s b { display: block; font-size: 64px; font-weight: 900; color: #fff; }
+.bw .s span { display: block; margin-top: 8px; font-family: var(--mono); font-size: 22px; letter-spacing: 0.2em; color: #8fb3a5; }
+.bw .s.hi { background: var(--amber); }
+.bw .s.hi b { color: var(--spruce); }
+.bw .s.hi span { color: var(--spruce); }
+.bw .ar { flex: 0 0 110px; display: flex; align-items: center; justify-content: center; }
+.bw .ar svg { width: 90px; height: 24px; }
+.fork { display: flex; align-items: center; margin-top: 44px; }
+.fork .src { flex: 0 0 340px; background: var(--spruce); border: 2px solid var(--ink); padding: 40px 20px; text-align: center; }
+.fork .src b { display: block; font-size: 44px; font-weight: 900; color: #fff; }
+.fork .src span { display: block; margin-top: 8px; font-family: var(--en); font-size: 40px; color: var(--amber); }
+.fork .fk { flex: 0 0 120px; height: 220px; }
+.fork .br { flex: 1; display: flex; flex-direction: column; gap: 40px; }
+.fork .p { border: 2px solid var(--ink); background: #f6f8f7; padding: 22px 32px; }
+.fork .p b { display: block; font-size: 46px; font-weight: 900; color: var(--spruce); }
+.fork .p span { display: block; margin-top: 4px; font-size: 28px; color: var(--soft); }
+.fork .p.lost { border: 3px dashed var(--amber-d); background: rgba(217,138,20,0.14); }
+.fork .p.lost b { color: var(--amber-d); }
+
+/* cover & big statement helpers */
+.cover-title { margin-top: 20px; }
+.cover-meta { margin-top: 64px; font-size: 34px; letter-spacing: 0.08em; color: #b9d3c8; display: flex; gap: 28px; align-items: center; }
+.cover-meta i { width: 10px; height: 10px; background: var(--amber); transform: rotate(45deg); display: inline-block; }
+.ghost {
+  position: absolute; right: 80px; bottom: -60px; font-family: var(--en); font-style: italic; font-weight: 400;
+  font-size: 560px; line-height: 1; color: rgba(217,138,20,0.16); z-index: 1; pointer-events: none;
+}
+.slide:not(.dark) .ghost { color: rgba(15,61,51,0.07); }
+.big24 { font-family: var(--en); font-weight: 600; font-size: 300px; line-height: 0.9; color: var(--amber); }
+.split { display: flex; align-items: center; gap: 100px; }
+.split .ring { flex: 0 0 520px; }
+.split .ring svg { width: 520px; height: 520px; display: block; }
+
+.quote { font-family: var(--en); font-style: italic; font-size: 76px; line-height: 1.25; color: var(--spruce); margin: 40px 0 0; font-weight: 500; border-left: 8px solid var(--amber); padding-left: 44px; }
+.quote .zh { display: block; font-family: var(--serif); font-style: normal; font-size: 44px; color: var(--soft); margin-top: 28px; font-weight: 400; }
+.dark .quote { color: #fff; }
+.dark .quote .zh { color: #cfe0d8; }
+
+.vs { display: grid; grid-template-columns: 1fr 1fr; margin-top: 60px; border: 2px solid var(--ink); }
+.vs > div { padding: 52px 50px; background: #f6f8f7; min-height: 330px; }
+.vs > div + div { border-left: 2px solid var(--ink); background: var(--spruce); color: #fff; }
+.vs h3 { margin: 0 0 22px; font-size: 52px; font-weight: 900; color: var(--spruce); }
+.vs > div + div h3 { color: var(--amber); }
+.vs p { margin: 0; font-size: 38px; line-height: 1.5; color: var(--soft); }
+.vs > div + div p { color: #dcebe4; }
+.vs p.q { font-family: var(--en); font-style: italic; font-size: 46px; line-height: 1.35; color: #fff; }
+
+/* page number */
+.pager {
+  position: absolute; right: 56px; bottom: 44px; z-index: 20;
+  font-family: var(--mono); font-size: 26px; letter-spacing: 0.1em; color: var(--mute);
+  background: var(--bg); padding: 6px 16px; border: 1px solid var(--rule);
+}
+.pager b { color: var(--ink); font-weight: 500; }
+.pager.on-dark { background: #0b3028; border-color: rgba(207,224,216,0.3); color: #8fb3a5; }
+.pager.on-dark b { color: var(--amber); }
+
+/* reveals: play whenever slide becomes active */
+.rv { opacity: 0; transform: translateY(24px); }
+.slide.active .rv { animation: rise 0.65s cubic-bezier(.2,.7,.2,1) forwards; }
+.slide.active .rv.d1 { animation-delay: 0.1s; }
+.slide.active .rv.d2 { animation-delay: 0.24s; }
+.slide.active .rv.d3 { animation-delay: 0.4s; }
+.slide.active .rv.d4 { animation-delay: 0.56s; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+/* === chapter 1 additions === */
+.dual { display:flex; align-items:center; gap:60px; }
+.dual .tx { flex:0 0 540px; }
+.dual .fig { flex:1; min-width:0; }
+.fig svg { width:100%; height:auto; display:block; }
+.dual h2 { font-size:68px; line-height:1.25; font-weight:900; }
+.dual .lead { font-size:40px; margin-top:30px; }
+.wide { margin-top:30px; }
+.wide svg { width:100%; height:auto; display:block; }
+.ax { stroke:var(--ink); stroke-width:3; fill:none; stroke-linecap:round; }
+.t1 { font-family:var(--serif); font-size:26px; fill:var(--soft); }
+.t2 { font-family:var(--serif); font-size:30px; font-weight:600; fill:var(--ink); }
+.t3 { font-family:var(--serif); font-size:34px; font-weight:900; fill:var(--spruce); }
+.ta { font-family:var(--serif); font-size:30px; font-weight:600; fill:var(--amber-d); }
+.tm { font-family:var(--mono); font-size:22px; fill:var(--mute); letter-spacing:.1em; }
+.te { font-family:var(--en); font-style:italic; font-size:30px; fill:var(--spruce); }
+.formula { font-family:var(--en); font-size:104px; font-weight:500; color:var(--spruce); margin:40px 0 0; line-height:1.15; }
+.formula i { color:var(--amber-d); }
+.wtpbar { display:flex; margin-top:64px; border:2px solid var(--ink); height:130px; max-width:1300px; }
+.wtpbar div { display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:900; }
+.wtpbar .y { flex:0 0 62%; background:var(--spruce); color:#fff; }
+.wtpbar .n { flex:1; background:rgba(217,138,20,.2); color:var(--amber-d); border-left:4px solid var(--amber); }
+.cmp { display:flex; align-items:center; gap:28px; margin-top:60px; }
+.cmp .b { flex:1; background:#f6f8f7; border:2px solid var(--ink); padding:44px 20px; text-align:center; font-size:64px; font-weight:900; color:var(--spruce); }
+.cmp .b span { display:block; font-family:var(--en); font-style:italic; font-weight:400; font-size:34px; color:var(--mute); margin-top:6px; }
+.cmp .b.hi { background:var(--spruce); color:#fff; }
+.cmp .b.hi span { color:#b9d3c8; }
+.cmp .op { font-family:var(--en); font-size:100px; font-weight:600; color:var(--amber-d); flex:0 0 130px; text-align:center; }
+.minifig { margin-top:20px; }
+.minifig svg { width:100%; height:auto; display:block; }
+.audio-tabs { display:flex; gap:6px; justify-content:center; margin-bottom:4px; }
+.audio-tabs button { font:500 13px var(--mono); padding:4px 10px; border:1px solid #8fb3a5; background:#0b3028; color:#cfe0d8; cursor:pointer; }
+.audio-tabs button.on { background:#d98a14; color:#0f3d33; border-color:#d98a14; }
+@media print { .audio-tabs { display:none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d98a14"/></marker></defs></svg>
+<div class="deck-viewport">
+  <div class="deck-stage" id="deckStage">
+<section class="slide dark active" data-title="Chapter 1"><div class="spine"><div class="no">01</div><div class="vt">Chapter 1</div></div><div class="ghost">WTP</div><div class="body"><p class="tag rv">Chapter 1 · Willingness to Pay</p><h1 class="xl cover-title rv d1">意愿支付与需求</h1><h2 class="t rv d2" style="margin-top:28px;font-size:72px;font-weight:600">第一章</h2><div class="cover-meta rv d3"><span>北大光华</span><i></i><span>光华在线</span></div></div></section>
+<section class="slide" data-title="Map"><div class="spine"><div class="no">02</div><div class="vt">Map</div></div><div class="body"><p class="tag rv">本节地图</p><h1 class="md rv d1">从心理价位，到一条曲线</h1><div class="flow rv d2"><div class="n"><b>意愿支付</b><span>WTP</span></div><div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div><div class="n"><b>需求曲线</b><span>Demand</span></div><div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div><div class="n last"><b>影响因素</b><span>Shifters</span></div></div></div></section>
+<section class="slide dark" data-title="Scene"><div class="spine"><div class="no">03</div><div class="vt">Scene</div></div><div class="body"><div class="split"><div class="ring rv" style="flex:0 0 340px"><svg style="width:340px;height:auto" viewBox="0 0 400 480" aria-hidden="true"><path d="M170 20h60v110l30 60v250h-120V190l30-60z" fill="#cfe0d8" stroke="#eef4f0" stroke-width="4"/><rect x="150" y="260" width="100" height="120" fill="#d98a14"/><rect x="165" y="8" width="70" height="26" fill="#d98a14"/></svg></div><div><p class="tag rv">场景</p><h1 class="lg rv d1">机场礼品店，<br/>一瓶<mark>冰酒</mark></h1><p class="lead rv d2">自己喝。买，还是不买？</p></div></div></div></section>
+<section class="slide" data-title="Two questions"><div class="spine"><div class="no">04</div><div class="vt">Two questions</div></div><div class="body"><p class="tag rv">两个问题</p><h1 class="md rv d1">同一瓶酒，两种问法</h1><div class="tiles c2 rv d2"><div class="tile"><p class="k">Q1</p><p class="h" style="font-size:54px">标价 P 下，<br/>买不买？</p></div><div class="tile hi"><p class="k">Q2</p><p class="h" style="font-size:54px">最多愿付<br/>多少？</p></div></div></div></section>
+<section class="slide" data-title="Definition"><div class="spine"><div class="no">05</div><div class="vt">Definition</div></div><div class="body"><p class="tag rv">定义</p><h2 class="t rv d1"><mark>意愿支付</mark> <span class="en">WTP</span></h2><p class="lead rv d2" style="margin-top:28px">愿为 1 单位商品支付的<b>最高</b>价格。俗称心理价位。</p><div class="wtpbar rv d3"><div class="y">价格 ≤ WTP · 愿意买</div><div class="n">&gt; WTP · 不买</div></div></div></section>
+<section class="slide" data-title="WTP ladder"><div class="spine"><div class="no">06</div><div class="vt">WTP ladder</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">示意</p><h2 class="rv d1">一阶一阶试，<br/>逼近心理价位</h2><p class="lead rv d2">买、买、不买……收敛。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M130 500V40"/><text class="te" x="110" y="36" text-anchor="end">¥</text><rect x="130" y="158" width="670" height="27" fill="rgba(217,138,20,.35)"/><polyline points="230,410 320,320 410,230 500,140 590,185 680,158" fill="none" stroke="#7b8c85" stroke-width="2" stroke-dasharray="5 5"/><circle cx="230" cy="410" r="14" fill="#0f3d33" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="230" y="386" text-anchor="middle">¥100 买</text><circle cx="320" cy="320" r="14" fill="#0f3d33" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="320" y="296" text-anchor="middle">¥200 买</text><circle cx="410" cy="230" r="14" fill="#0f3d33" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="410" y="206" text-anchor="middle">¥300 买</text><circle cx="500" cy="140" r="14" fill="#fff" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="500" y="116" text-anchor="middle">¥400 不买</text><circle cx="590" cy="185" r="14" fill="#0f3d33" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="590" y="161" text-anchor="middle">¥350 买</text><circle cx="680" cy="158" r="14" fill="#fff" stroke="#0f3d33" stroke-width="4"/><text class="t1" x="680" y="134" text-anchor="middle">¥380 不买</text><text class="ta" x="800" y="225" text-anchor="end">WTP 在此区间</text><text class="tm" x="140" y="540" text-anchor="start">示意 · 价格阶梯试探，逐步逼近</text></svg></div></div></div></section>
+<section class="slide" data-title="Decision"><div class="spine"><div class="no">07</div><div class="vt">Decision</div></div><div class="body"><p class="tag rv">决策范式</p><h1 class="md rv d1">收益 vs 成本</h1><div class="cmp rv d2"><div class="b">收益<span>WTP</span></div><div class="op">≥</div><div class="b hi">成本<span>P</span></div></div><p class="lead rv d2">WTP ≥ P，就买。</p></div></section>
+<section class="slide" data-title="Utility in money"><div class="spine"><div class="no">08</div><div class="vt">Utility in money</div></div><div class="body"><p class="tag rv">效用</p><h1 class="md rv d1">WTP：满足感的<mark>货币度量</mark></h1><div class="flow rv d2"><div class="n"><b>消费满足感</b><span>看不见</span></div><div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div><div class="n"><b>折成钱</b><span>“值多少”</span></div><div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div><div class="n last"><b>WTP</b><span>看得见</span></div></div></div></section>
+<section class="slide" data-title="Consumer surplus"><div class="spine"><div class="no">09</div><div class="vt">Consumer surplus</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">消费者剩余 CS</p><h2 class="rv d1">CS = WTP − P</h2><p class="lead rv d2">愿付的减去实付的，<br/>就是赚到的。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><rect x="330" y="300" width="140" height="200" fill="#0f3d33"/><rect x="330" y="110" width="140" height="190" fill="rgba(217,138,20,.55)" stroke="#a8650a" stroke-width="3"/><line x1="90" y1="300" x2="780" y2="300" stroke="#d98a14" stroke-width="5" stroke-dasharray="14 8"/><text class="ta" x="500" y="340" text-anchor="start">P 标价</text><text class="t3" x="400" y="98" text-anchor="middle">WTP</text><text class="t2" x="400" y="410" text-anchor="middle" style="fill:#fff">实付</text><text class="t3" x="500" y="215" text-anchor="start">CS = WTP − P</text></svg></div></div></div></section>
+<section class="slide" data-title="CS vs price"><div class="spine"><div class="no">10</div><div class="vt">CS vs price</div></div><div class="body"><p class="tag rv">价格与剩余</p><h2 class="t rv d1">价格↑ → CS↓；价格↓ → CS↑</h2><div class="wide rv d2"><svg viewBox="0 0 1700 560" aria-hidden="true"><g><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="90" y1="80" x2="700" y2="480" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><polygon points="90,80 90,210 288,210" fill="rgba(217,138,20,.5)" stroke="#a8650a" stroke-width="3"/><line x1="90" y1="210" x2="348" y2="210" stroke="#d98a14" stroke-width="5" stroke-dasharray="12 8"/><text class="ta" x="358" y="220" text-anchor="start">P</text><text class="ta" x="450" y="46" text-anchor="middle">P ↑   CS ↓</text><text class="t3" x="130" y="181" text-anchor="start">CS</text></g><g transform="translate(880,0)"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="90" y1="80" x2="700" y2="480" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><polygon points="90,80 90,370 532,370" fill="rgba(217,138,20,.5)" stroke="#a8650a" stroke-width="3"/><line x1="90" y1="370" x2="592" y2="370" stroke="#d98a14" stroke-width="5" stroke-dasharray="12 8"/><text class="ta" x="602" y="380" text-anchor="start">P</text><text class="ta" x="450" y="46" text-anchor="middle">P ↓   CS ↑</text><text class="t3" x="130" y="261" text-anchor="start">CS</text></g></svg></div></div></section>
+<section class="slide" data-title="WTP varies"><div class="spine"><div class="no">11</div><div class="vt">WTP varies</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">课堂印象</p><h2 class="rv d1">同学们的 WTP，<br/>差异很大</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><circle cx="150" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="235" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="235" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="320" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="320" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="320" cy="386" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="320" cy="344" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="386" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="344" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="302" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="405" cy="260" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="490" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="490" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="490" cy="386" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="490" cy="344" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="490" cy="302" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="575" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="575" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="575" cy="386" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="660" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="660" cy="428" r="18" fill="#0f3d33" fill-opacity=".9"/><circle cx="745" cy="470" r="18" fill="#0f3d33" fill-opacity=".9"/><text class="te" x="800" y="536" text-anchor="end">WTP →</text><text class="tm" x="100" y="50" text-anchor="start">示意 · 非真实课堂数据 · 每点 = 一位同学</text></svg></div></div></div></section>
+<section class="slide dark" data-title="Next"><div class="spine"><div class="no">12</div><div class="vt">Next</div></div><div class="ghost">→</div><div class="body"><p class="tag rv">启下</p><h1 class="lg rv d1">WTP 人人不同<br/>→ <mark>需求曲线</mark></h1><p class="lead rv d2">把这些差异排起来。</p></div></section>
+<section class="slide dark" data-title="Section 2"><div class="spine"><div class="no">13</div><div class="vt">Section 2</div></div><div class="ghost">D</div><div class="body"><p class="tag rv">Section 2</p><h1 class="xl rv d1">第二节 · 需求曲线</h1><div class="cover-meta rv d3"><span>Demand Curve</span></div></div></section>
+<section class="slide" data-title="Re-order"><div class="spine"><div class="no">14</div><div class="vt">Re-order</div></div><div class="body"><p class="tag rv">重排</p><h2 class="t rv d1">按 WTP，从高到低排队</h2><div class="wide rv d2"><svg viewBox="0 0 1700 560" aria-hidden="true"><g><line class="ax" x1="90" y1="500" x2="800" y2="500"/><rect x="110" y="280" width="64" height="220" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="196" y="104" width="64" height="396" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="282" y="368" width="64" height="132" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="368" y="192" width="64" height="308" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="454" y="412" width="64" height="88" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="540" y="148" width="64" height="352" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="626" y="324" width="64" height="176" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="712" y="236" width="64" height="264" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><text class="ta" x="450" y="46" text-anchor="middle">随机顺序</text></g><g transform="translate(880,0)"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><rect x="110" y="104" width="64" height="396" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="196" y="148" width="64" height="352" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="282" y="192" width="64" height="308" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="368" y="236" width="64" height="264" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="454" y="280" width="64" height="220" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="540" y="324" width="64" height="176" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="626" y="368" width="64" height="132" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="712" y="412" width="64" height="88" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><text class="ta" x="450" y="46" text-anchor="middle">从高到低</text></g><line x1="815" y1="300" x2="960" y2="300" stroke="#d98a14" stroke-width="8" marker-end="url(#ah)"/></svg></div></div></section>
+<section class="slide" data-title="Pricing"><div class="spine"><div class="no">15</div><div class="vt">Pricing</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">定价情景</p><h2 class="rv d1">定价 P = ?<br/>谁会买？</h2><p class="lead rv d2">水平一线，切开买与不买。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><rect x="110" y="104" width="64" height="396" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="196" y="148" width="64" height="352" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="282" y="192" width="64" height="308" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="368" y="236" width="64" height="264" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="454" y="280" width="64" height="220" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="540" y="324" width="64" height="176" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><rect x="626" y="368" width="64" height="132" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><rect x="712" y="412" width="64" height="88" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><line x1="90" y1="302" x2="800" y2="302" stroke="#d98a14" stroke-width="5" stroke-dasharray="14 8"/><text class="ta" x="800" y="290" text-anchor="end">P = ?</text><text class="tm" x="450" y="540" text-anchor="middle">示意</text></svg></div></div></div></section>
+<section class="slide" data-title="P = 180"><div class="spine"><div class="no">16</div><div class="vt">P = 180</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">例</p><h2 class="rv d1">P = 180<br/>WTP ≥ 180 才买</h2><p class="lead rv d2">线以上的人，就是需求量。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><rect x="110" y="104" width="64" height="396" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="196" y="148" width="64" height="352" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="282" y="192" width="64" height="308" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="368" y="236" width="64" height="264" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="454" y="280" width="64" height="220" fill="#0f3d33" stroke="#0f3d33" stroke-width="3"/><rect x="540" y="324" width="64" height="176" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><rect x="626" y="368" width="64" height="132" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><rect x="712" y="412" width="64" height="88" fill="#e3ebe7" stroke="#7b8c85" stroke-width="3" stroke-dasharray="7 6"/><line x1="90" y1="302" x2="800" y2="302" stroke="#d98a14" stroke-width="5" stroke-dasharray="14 8"/><text class="ta" x="800" y="290" text-anchor="end">P = 180</text><path d="M110 100H536" stroke="#d98a14" stroke-width="4" fill="none"/><text class="t2" x="323" y="84" text-anchor="middle">买的人 = Q</text><text class="tm" x="450" y="540" text-anchor="middle">示意</text></svg></div></div></div></section>
+<section class="slide" data-title="Connect tops"><div class="spine"><div class="no">17</div><div class="vt">Connect tops</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">连线</p><h2 class="rv d1">把顶点连起来<br/>= 需求曲线</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><rect x="110" y="104" width="64" height="396" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="196" y="148" width="64" height="352" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="282" y="192" width="64" height="308" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="368" y="236" width="64" height="264" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="454" y="280" width="64" height="220" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="540" y="324" width="64" height="176" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="626" y="368" width="64" height="132" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><rect x="712" y="412" width="64" height="88" fill="#cfe0d8" stroke="#0f3d33" stroke-width="3"/><polyline points="142,104 228,148 314,192 400,236 486,280 572,324 658,368 744,412" fill="none" stroke="#0f3d33" stroke-width="4"/><circle cx="142" cy="104" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="228" cy="148" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="314" cy="192" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="400" cy="236" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="486" cy="280" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="572" cy="324" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="658" cy="368" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><circle cx="744" cy="412" r="9" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><line x1="130" y1="90" x2="760" y2="440" stroke="#d98a14" stroke-width="6" stroke-dasharray="14 8"/><text class="ta" x="780" y="250" text-anchor="end">需求曲线</text></svg></div></div></div></section>
+<section class="slide" data-title="Law of demand"><div class="spine"><div class="no">18</div><div class="vt">Law of demand</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">需求定律</p><h2 class="rv d1">价格下降，<br/>需求量上升</h2><p class="lead rv d2">两者负向变动。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 570" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><path d="M90 172H330 M330 172V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="330" cy="172" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="350" y="158" text-anchor="start">A</text><path d="M90 360H560 M560 360V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="560" cy="360" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="580" y="346" text-anchor="start">B</text><line x1="60" y1="180" x2="60" y2="352" stroke="#d98a14" stroke-width="6" marker-end="url(#ah)"/><line x1="334" y1="535" x2="556" y2="535" stroke="#d98a14" stroke-width="6" marker-end="url(#ah)"/><text class="ta" x="450" y="46" text-anchor="middle">P ↓   →   Q ↑</text></svg></div></div></div></section>
+<section class="slide" data-title="Straight line"><div class="spine"><div class="no">19</div><div class="vt">Straight line</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">常用法</p><h2 class="rv d1">折线太碎，<br/>拟合成直线</h2><p class="lead rv d2">便于计算。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><path d="M230 105 V105 H267 V135 H303 V165 H340 V195 H377 V225 H413 V255 H450 V285 H487 V315 H523 V345 H560 V375 H597 V405 H633 V435 H670" fill="none" stroke="#0f3d33" stroke-width="4"/><line x1="230" y1="90" x2="670" y2="450" stroke="#d98a14" stroke-width="6" stroke-linecap="round"/><text class="ta" x="640" y="150" text-anchor="start">直线拟合</text><text class="tm" x="450" y="546" text-anchor="start">示意</text></svg></div></div></div></section>
+<section class="slide" data-title="Q = a − bP"><div class="spine"><div class="no">20</div><div class="vt">Q = a − bP</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 640px"><p class="tag rv">需求函数</p><h2 class="rv d1">把曲线写成公式</h2><p class="formula rv d2">Q = a − b<i>P</i></p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="130" y1="80" x2="640" y2="500" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><circle cx="640" cy="500" r="11" fill="#d98a14"/><circle cx="90" cy="80" r="0"/><text class="te" x="640" y="548" text-anchor="middle">a</text><text class="te" x="78" y="90" text-anchor="end">a/b</text><text class="ta" x="380" y="260" text-anchor="start">斜率绝对值 1/b</text></svg></div></div></div></section>
+<section class="slide" data-title="Why P on y-axis"><div class="spine"><div class="no">21</div><div class="vt">Why P on y-axis</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">为什么 P 在纵轴？</p><h2 class="rv d1">沿袭马歇尔</h2><p class="lead rv d2">且曲线来自 WTP 排序：高价在前。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 580" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><text class="t2" x="100" y="56" text-anchor="start">纵轴：价格 / WTP</text><text class="t2" x="790" y="560" text-anchor="end">横轴：买的人数 Q</text></svg></div></div></div></section>
+<section class="slide" data-title="Inverse demand"><div class="spine"><div class="no">22</div><div class="vt">Inverse demand</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 700px"><p class="tag rv">反需求</p><h2 class="rv d1">反过来，用 Q 表示 P</h2><p class="formula rv d2" style="font-size:76px">P = <i>a/b</i> − (1/b)Q</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="130" y1="80" x2="640" y2="500" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><circle cx="640" cy="500" r="11" fill="#d98a14"/><circle cx="90" cy="80" r="0"/><text class="te" x="640" y="548" text-anchor="middle">a</text><text class="te" x="78" y="90" text-anchor="end">a/b</text><text class="ta" x="380" y="260" text-anchor="start">斜率：−1/b</text></svg></div></div></div></section>
+<section class="slide" data-title="Pricing needs demand"><div class="spine"><div class="no">23</div><div class="vt">Pricing needs demand</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">应用</p><h2 class="rv d1">商家定价，<br/>先懂需求</h2><p class="lead rv d2">每个价格下，多少人会买？</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><path d="M90 147H300 M300 147V500" stroke="#a8650a" stroke-width="3" stroke-dasharray="7 6" fill="none"/><circle cx="300" cy="147" r="12" fill="#a8650a"/><text class="t2" x="318" y="129" text-anchor="start">定高：买的少</text><path d="M90 376H580 M580 376V500" stroke="#0f3d33" stroke-width="3" stroke-dasharray="7 6" fill="none"/><circle cx="580" cy="376" r="12" fill="#0f3d33"/><text class="t2" x="598" y="358" text-anchor="start">定低：赚得薄</text></svg></div></div></div></section>
+<section class="slide" data-title="Recap"><div class="spine"><div class="no">24</div><div class="vt">Recap</div></div><div class="body"><p class="tag rv">小节</p><h1 class="md rv d1">四件事</h1><div class="tiles c4 rv d2" style="margin-top:44px"><div class="tile"><p class="k">01</p><p class="w">曲线</p><p class="e">Demand curve</p></div><div class="tile"><p class="k">02</p><p class="w">定律</p><p class="e">P↓ Q↑</p></div><div class="tile"><p class="k">03</p><p class="w">函数</p><p class="e">Q = a − bP</p></div><div class="tile hi"><p class="k">04</p><p class="w">反需求</p><p class="e">P = a/b − Q/b</p></div></div></div></section>
+<section class="slide dark" data-title="Next"><div class="spine"><div class="no">25</div><div class="vt">Next</div></div><div class="ghost">⇄</div><div class="body"><p class="tag rv">启下</p><h1 class="lg rv d1">环境变了<br/>曲线会<mark>动</mark>吗？</h1><p class="lead rv d2">哪些因素，让整条曲线移动？</p></div></section>
+<section class="slide dark" data-title="Section 3"><div class="spine"><div class="no">26</div><div class="vt">Section 3</div></div><div class="ghost">Y</div><div class="body"><p class="tag rv">Section 3</p><h1 class="lg rv d1">第三节 · 影响需求的因素（一）</h1><div class="cover-meta rv d3"><span>Income</span></div></div></section>
+<section class="slide" data-title="Income up"><div class="spine"><div class="no">27</div><div class="vt">Income up</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">收入</p><h2 class="rv d1">收入↑<br/>曲线右移</h2><p class="lead rv d2">多数商品 WTP ↑，<br/><b>需求增加</b>。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="340" y1="90" x2="780" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="560" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="790" y="484" text-anchor="start">D₁</text><text class="ta" x="450" y="46" text-anchor="middle">需求增加</text></svg></div></div></div></section>
+<section class="slide" data-title="Income down"><div class="spine"><div class="no">28</div><div class="vt">Income down</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">反向</p><h2 class="rv d1">需求减少<br/>= 曲线左移</h2><p class="lead rv d2">同一价格，买得更少。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="120" y1="90" x2="560" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="340" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="570" y="484" text-anchor="start">D₁</text><text class="ta" x="450" y="46" text-anchor="middle">需求减少</text></svg></div></div></div></section>
+<section class="slide" data-title="Upgrade"><div class="spine"><div class="no">29</div><div class="vt">Upgrade</div></div><div class="body"><p class="tag rv">追问</p><h1 class="md rv d1">收入涨了，<br/>什么都多买吗？</h1><div class="flow rv d2"><div class="n"><b>泡面</b><span>收入低时常买</span></div><div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div><div class="n last"><b>餐厅</b><span>收入高后换掉</span></div></div><p class="note rv d3">消费升级</p></div></section>
+<section class="slide" data-title="Normal vs inferior"><div class="spine"><div class="no">30</div><div class="vt">Normal vs inferior</div></div><div class="body"><p class="tag rv">定义</p><h2 class="t rv d1">正常品 vs 劣等品</h2><div class="wide rv d2"><svg viewBox="0 0 1700 560" aria-hidden="true"><g><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="340" y1="90" x2="780" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="560" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start"></text><text class="te" x="790" y="484" text-anchor="start"></text><text class="ta" x="450" y="46" text-anchor="middle">正常品 normal · 收入↑ 需求↑</text></g><g transform="translate(880,0)"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="120" y1="90" x2="560" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="340" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start"></text><text class="te" x="570" y="484" text-anchor="start"></text><text class="ta" x="450" y="46" text-anchor="middle">劣等品 inferior · 收入↑ 需求↓</text></g></svg></div></div></section>
+<section class="slide" data-title="Inferior ≠ poor"><div class="spine"><div class="no">31</div><div class="vt">Inferior ≠ poor</div></div><div class="body"><p class="tag rv">别误会</p><h1 class="md rv d1">劣等品 ≠ 劣质品</h1><div class="cmp rv d2"><div class="b hi">劣等品<span>收入↑，买得反而少</span></div><div class="op">≠</div><div class="b">劣质品<span>质量差</span></div></div><p class="lead rv d2">方便面：不是不好，而是有钱后吃得少。</p></div></section>
+<section class="slide" data-title="Along vs shift"><div class="spine"><div class="no">32</div><div class="vt">Along vs shift</div></div><div class="body"><p class="tag rv">关键区分</p><h2 class="t rv d1">沿曲线移动 vs 曲线移动</h2><div class="wide rv d2"><svg viewBox="0 0 1700 560" aria-hidden="true"><g><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><path d="M90 188H350 M350 188V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="350" cy="188" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="370" y="174" text-anchor="start">A</text><path d="M90 335H530 M530 335V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="530" cy="335" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="550" y="321" text-anchor="start">B</text><line x1="338" y1="178" x2="490" y2="295" stroke="#d98a14" stroke-width="6" marker-end="url(#ah)"/><text class="ta" x="450" y="46" text-anchor="middle">价格变动 → 沿曲线移动</text></g><g transform="translate(880,0)"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="340" y1="90" x2="780" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="560" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="790" y="484" text-anchor="start">D₁</text><text class="ta" x="450" y="46" text-anchor="middle">其他因素变动 → 曲线移动</text></g></svg></div></div></section>
+<section class="slide" data-title="Terms"><div class="spine"><div class="no">33</div><div class="vt">Terms</div></div><div class="body"><p class="tag rv">术语</p><div class="tiles c2 rv d2" style="margin-top:20px"><div class="tile"><p class="k">沿曲线</p><p class="w" style="font-size:60px">需求量变化</p><p class="d">由<b>价格</b>引起</p><div class="minifig"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><path d="M90 188H350 M350 188V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="350" cy="188" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="370" y="174" text-anchor="start">A</text><path d="M90 335H530 M530 335V500" stroke="#7b8c85" stroke-width="2" stroke-dasharray="6 6" fill="none"/><circle cx="530" cy="335" r="13" fill="#d98a14" stroke="#0f3d33" stroke-width="3"/><text class="t3" x="550" y="321" text-anchor="start">B</text><line x1="338" y1="178" x2="490" y2="295" stroke="#d98a14" stroke-width="6" marker-end="url(#ah)"/></svg></div></div><div class="tile hi"><p class="k">曲线移动</p><p class="w" style="font-size:60px">需求变化</p><p class="d">由<b>其他因素</b>引起</p><div class="minifig"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="340" y1="90" x2="780" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="560" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="790" y="484" text-anchor="start">D₁</text></svg></div></div></div></div></section>
+<section class="slide dark" data-title="Recap C"><div class="spine"><div class="no">34</div><div class="vt">Recap C</div></div><div class="ghost">→</div><div class="body"><p class="tag rv">小结</p><h1 class="md rv d1">收入变了，曲线要动</h1><p class="lead rv d2">正常品右移，劣等品左移。</p><p class="note rv d3">下一节：相关品、人数……</p></div></section>
+<section class="slide dark" data-title="Section 4"><div class="spine"><div class="no">35</div><div class="vt">Section 4</div></div><div class="ghost">Z</div><div class="body"><p class="tag rv">Section 4</p><h1 class="lg rv d1">第四节 · 影响需求的因素（二）</h1><div class="cover-meta rv d3"><span>Related goods &amp; population</span></div></div></section>
+<section class="slide" data-title="Pepsi sale"><div class="spine"><div class="no">36</div><div class="vt">Pepsi sale</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">直觉</p><h2 class="rv d1">百事打折，<br/>可乐怎么样？</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 440" aria-hidden="true"><rect x="30" y="150" width="270" height="160" fill="#0f3d33" stroke="#12211c" stroke-width="3"/><text class="t3" x="165" y="244" text-anchor="middle" style="fill:#fff;font-size:44px">可乐</text><rect x="520" y="150" width="270" height="160" fill="#f6f8f7" stroke="#12211c" stroke-width="3"/><text class="t3" x="655" y="244" text-anchor="middle" style="font-size:44px">百事</text><line x1="505" y1="230" x2="315" y2="230" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="ta" x="410" y="200" text-anchor="middle">替代 ⇄</text><text class="ta" x="655" y="120" text-anchor="middle">价格 ↓</text><text class="ta" x="165" y="380" text-anchor="middle">需求 ？</text><text class="tm" x="165" y="120" text-anchor="middle">本品</text><text class="tm" x="655" y="340" text-anchor="middle">相关品</text></svg></div></div></div></section>
+<section class="slide" data-title="Substitutes"><div class="spine"><div class="no">37</div><div class="vt">Substitutes</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">替代品</p><h2 class="rv d1">相关品降价<br/>本品需求↓</h2><p class="lead rv d2">曲线左移。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="120" y1="90" x2="560" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="340" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="570" y="484" text-anchor="start">D₁</text><text class="ta" x="450" y="46" text-anchor="middle">替代品降价 → 左移</text></svg></div></div></div></section>
+<section class="slide" data-title="Everyday substitutes"><div class="spine"><div class="no">38</div><div class="vt">Everyday substitutes</div></div><div class="body"><p class="tag rv">生活中的替代</p><h1 class="md rv d1">比比看</h1><div class="strips rv d2"><span class="strip">咖啡 ⇄ 茶</span><span class="strip">打车 ⇄ 地铁</span><span class="strip hi">新款 ⇄ 上一代手机</span></div><p class="note rv d3">同一厂商的新旧产品，也会互相替代。</p></div></section>
+<section class="slide" data-title="Complements"><div class="spine"><div class="no">39</div><div class="vt">Complements</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">互补品</p><h2 class="rv d1">一起消费<br/>相关品涨价，<br/>本品需求↓</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 440" aria-hidden="true"><rect x="30" y="150" width="270" height="160" fill="#0f3d33" stroke="#12211c" stroke-width="3"/><text class="t3" x="165" y="244" text-anchor="middle" style="fill:#fff;font-size:44px">汽车</text><rect x="520" y="150" width="270" height="160" fill="#f6f8f7" stroke="#12211c" stroke-width="3"/><text class="t3" x="655" y="244" text-anchor="middle" style="font-size:44px">汽油</text><line x1="505" y1="230" x2="315" y2="230" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="ta" x="410" y="200" text-anchor="middle">互补 +</text><text class="ta" x="655" y="120" text-anchor="middle">价格 ↑</text><text class="ta" x="165" y="380" text-anchor="middle">需求 ↓</text><text class="tm" x="165" y="120" text-anchor="middle">本品</text><text class="tm" x="655" y="340" text-anchor="middle">相关品</text></svg></div></div></div></section>
+<section class="slide" data-title="Printer & ink"><div class="spine"><div class="no">40</div><div class="vt">Printer & ink</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">一句故事</p><h2 class="rv d1">打印机便宜，<br/>墨盒赚钱</h2><p class="lead rv d2">交叉补贴。</p></div><div class="fig rv d2"><svg viewBox="0 0 820 440" aria-hidden="true"><rect x="30" y="150" width="270" height="160" fill="#0f3d33" stroke="#12211c" stroke-width="3"/><text class="t3" x="165" y="244" text-anchor="middle" style="fill:#fff;font-size:44px">打印机</text><rect x="520" y="150" width="270" height="160" fill="#f6f8f7" stroke="#12211c" stroke-width="3"/><text class="t3" x="655" y="244" text-anchor="middle" style="font-size:44px">墨盒</text><line x1="505" y1="230" x2="315" y2="230" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="ta" x="410" y="200" text-anchor="middle">互补 +</text><text class="ta" x="655" y="120" text-anchor="middle">反复购买</text><text class="ta" x="165" y="380" text-anchor="middle">几乎白送</text><text class="tm" x="165" y="120" text-anchor="middle">本品</text><text class="tm" x="655" y="340" text-anchor="middle">相关品</text></svg></div></div></div></section>
+<section class="slide" data-title="More people"><div class="spine"><div class="no">41</div><div class="vt">More people</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">人数</p><h2 class="rv d1">消费者↑<br/>曲线右移</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><path class="ax" d="M90 500H790M90 500V30"/><text class="te" x="70" y="52" text-anchor="end">P</text><text class="te" x="798" y="528" text-anchor="start">Q</text><line x1="230" y1="90" x2="670" y2="450" stroke="#7b8c85" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 10"/><line x1="340" y1="90" x2="780" y2="450" stroke="#0f3d33" stroke-width="6" stroke-linecap="round"/><line x1="450" y1="270" x2="560" y2="270" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="tm" x="680" y="484" text-anchor="start">D₀</text><text class="te" x="790" y="484" text-anchor="start">D₁</text><text class="ta" x="450" y="46" text-anchor="middle">人数 ↑ → 右移</text></svg></div></div></div></section>
+<section class="slide" data-title="Population structure"><div class="spine"><div class="no">42</div><div class="vt">Population structure</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">结构</p><h2 class="rv d1">人口结构<br/>也改变需求</h2><p class="lead rv d2">老龄化 → 医疗、养老需求↑</p></div><div class="fig rv d2"><svg viewBox="0 0 820 560" aria-hidden="true"><line class="ax" x1="90" y1="500" x2="800" y2="500"/><text class="t2" x="275" y="90" text-anchor="middle">今天（示意）</text><rect x="110" y="170" width="90" height="330" fill="#0f3d33"/><text class="t1" x="155" y="530" text-anchor="middle">青年</text><rect x="230" y="200" width="90" height="300" fill="#0f3d33"/><text class="t1" x="275" y="530" text-anchor="middle">中年</text><rect x="350" y="380" width="90" height="120" fill="#d98a14"/><text class="t1" x="395" y="530" text-anchor="middle">老年</text><text class="t2" x="635" y="90" text-anchor="middle">若干年后（示意）</text><rect x="470" y="290" width="90" height="210" fill="#0f3d33"/><text class="t1" x="515" y="530" text-anchor="middle">青年</text><rect x="590" y="215" width="90" height="285" fill="#0f3d33"/><text class="t1" x="635" y="530" text-anchor="middle">中年</text><rect x="710" y="200" width="90" height="300" fill="#d98a14"/><text class="t1" x="755" y="530" text-anchor="middle">老年</text><line x1="30" y1="0" x2="30" y2="0"/></svg></div></div></div></section>
+<section class="slide" data-title="Anchoring"><div class="spine"><div class="no">43</div><div class="vt">Anchoring</div></div><div class="body"><div class="dual"><div class="tx" style="flex:0 0 540px"><p class="tag rv">行为补充 · 锚定效应</p><h2 class="rv d1">先看到的标价<br/>影响 WTP</h2></div><div class="fig rv d2"><svg viewBox="0 0 820 480" aria-hidden="true"><rect x="20" y="60" width="360" height="220" fill="#f6f8f7" stroke="#12211c" stroke-width="3"/><text class="t1" x="200" y="140" text-anchor="middle">先看到</text><text class="t3" x="200" y="230" text-anchor="middle" style="font-size:56px">¥ 1000</text><line x1="200" y1="300" x2="200" y2="380" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><rect x="440" y="60" width="360" height="220" fill="#f6f8f7" stroke="#12211c" stroke-width="3"/><text class="t1" x="620" y="140" text-anchor="middle">先看到</text><text class="t3" x="620" y="230" text-anchor="middle" style="font-size:56px">¥ 100</text><line x1="620" y1="300" x2="620" y2="380" stroke="#d98a14" stroke-width="7" marker-end="url(#ah)"/><text class="ta" x="200" y="440" text-anchor="middle">WTP 偏高</text><text class="ta" x="620" y="440" text-anchor="middle">WTP 偏低</text></svg></div></div></div></section>
+<section class="slide" data-title="Overview"><div class="spine"><div class="no">44</div><div class="vt">Overview</div></div><div class="body"><p class="tag rv">总览</p><h1 class="md rv d1">谁让曲线动？</h1><div class="tiles c4 rv d2" style="margin-top:40px"><div class="tile"><p class="k">01</p><p class="w" style="font-size:60px">收入</p><p class="d">正常品右移 · 劣等品左移</p></div><div class="tile"><p class="k">02</p><p class="w" style="font-size:60px">相关品价格</p><p class="d">替代同向 · 互补反向</p></div><div class="tile"><p class="k">03</p><p class="w" style="font-size:60px">人数 · 结构</p><p class="d">人越多，右移</p></div><div class="tile hi"><p class="k">04</p><p class="w" style="font-size:60px">偏好等</p><p class="d">心理、预期……</p></div></div></div></section>
+<section class="slide dark" data-title="Next chapter"><div class="spine"><div class="no">45</div><div class="vt">Next chapter</div></div><div class="ghost">S</div><div class="body"><p class="tag rv">下一章</p><h1 class="lg rv d1">买方讲完了<br/>卖方呢？</h1><p class="lead rv d2">下一章：<mark>供给曲线</mark>。</p></div></section>
+<section class="slide dark" data-title="End"><div class="spine"><div class="no">46</div><div class="vt">End</div></div><div class="ghost">END</div><div class="body"><p class="tag rv">Chapter 1</p><h1 class="xl rv d1">本章完</h1><div class="cover-meta rv d3"><span>北大光华</span><i></i><span>光华在线</span></div></div></section>
+    <div class="pager" id="pager" aria-live="polite"><b id="pageCur">1</b> / <span id="pageTotal">46</span></div>
+  </div>
+</div>
+<div class="deck-controls"><div class="audio-tabs" id="audioTabs"><button class="on" data-src="P02_意愿支付_128k.mp3">意愿支付</button><button data-src="P03_需求曲线_128k.mp3">需求曲线</button><button data-src="P04_影响需求一_128k.mp3">影响需求一</button><button data-src="P05_影响需求二_128k.mp3">影响需求二</button></div><audio id="lecture-audio" controls preload="none" src="P02_意愿支付_128k.mp3"></audio></div>
+<script>
+(function () {
+  const stage = document.getElementById('deckStage');
+  const slides = Array.from(stage.querySelectorAll('.slide'));
+  const pageCur = document.getElementById('pageCur');
+  const pager = document.getElementById('pager');
+  const aud = document.getElementById('lecture-audio');
+  document.querySelectorAll('#audioTabs button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#audioTabs button').forEach(x => x.classList.toggle('on', x === b));
+    aud.src = b.dataset.src; aud.load(); aud.play().catch(() => {});
+    b.blur();
+  }));
+  let index = Math.max(0, slides.findIndex(s => s.classList.contains('active')));
+
+  document.getElementById('pageTotal').textContent = String(slides.length);
+
+  function fitStage() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const scale = Math.min(vw / 1920, vh / 1080);
+    const x = (vw - 1920 * scale) / 2;
+    const y = (vh - 1080 * scale) / 2;
+    stage.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + scale + ')';
+  }
+
+  function show(i) {
+    if (i < 0 || i >= slides.length) return;
+    slides.forEach((s, n) => s.classList.toggle('active', n === i));
+    index = i;
+    pageCur.textContent = String(i + 1);
+    pager.classList.toggle('on-dark', slides[i].classList.contains('dark'));
+  }
+  const next = () => show(index + 1);
+  const prev = () => show(index - 1);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'AUDIO' || e.target.tagName === 'BUTTON') && e.key === ' ') return; // let audio control own space
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); show(0); }
+    else if (k === 'End') { e.preventDefault(); show(slides.length - 1); }
+  });
+
+  stage.addEventListener('click', (e) => {
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    if (x > 0.55) next(); else if (x < 0.45) prev();
+  });
+
+  window.addEventListener('resize', fitStage);
+  fitStage();
+  show(index);
+})();
+</script>
+</body>
+</html>

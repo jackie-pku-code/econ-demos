@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>导论 · 微观经济学供需模型入门</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* === VIEWPORT BASE (mandatory fixed 16:9 stage) === */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--stage-bg, #0c1512);
+}
+.deck-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--stage-bg, #0c1512);
+}
+.deck-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: var(--slide-bg, #e9ecea);
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.slide.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+.deck-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(12,21,18,0.72);
+  backdrop-filter: blur(8px);
+  color: #eef4f0;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+}
+.deck-controls:hover, .deck-controls:focus-within { opacity: 1; }
+.deck-controls audio { height: 36px; width: 420px; display: block; }
+.deck-controls label { display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; user-select: none; opacity: 0.9; }
+.deck-controls input { accent-color: #d98a14; }
+@media print {
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .deck-viewport { position: static; overflow: visible; }
+  .deck-stage { position: static; width: auto; height: auto; transform: none !important; }
+  .slide { position: relative; visibility: visible !important; opacity: 1 !important; break-after: page; }
+  .deck-controls { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .rv { opacity: 1 !important; transform: none !important; }
+}
+
+/* === DESIGN SYSTEM: 方格账本 · 松石墨绿 + 琥珀 (ledger grid, deep spruce, amber) === */
+:root {
+  --stage-bg: #0c1512;
+  --slide-bg: #e9ecea;
+  --bg: #e9ecea;
+  --bg2: #dde3df;
+  --ink: #12211c;
+  --soft: #3d5048;
+  --mute: #7b8c85;
+  --rule: #b9c5bf;
+  --spruce: #0f3d33;
+  --spruce2: #174d41;
+  --amber: #d98a14;
+  --amber-d: #a8650a;
+  --mist: #cfe0d8;
+  --serif: "Noto Serif SC", "Songti SC", serif;
+  --en: "Fraunces", "Noto Serif SC", serif;
+  --mono: "IBM Plex Mono", "Consolas", monospace;
+}
+
+.slide {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: 0 0;
+  color: var(--ink);
+  font-family: var(--serif);
+}
+/* fade the grid toward the center so text sits on calm paper */
+.slide::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 65% at 55% 50%, var(--bg) 35%, rgba(233,236,234,0.35) 100%);
+  z-index: 0;
+}
+.slide.dark {
+  background-color: var(--spruce);
+  background-image:
+    linear-gradient(rgba(207,224,216,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(207,224,216,0.08) 1px, transparent 1px);
+  color: #eef4f0;
+}
+.slide.dark::before {
+  background: radial-gradient(ellipse 70% 65% at 55% 50%, var(--spruce) 35%, rgba(15,61,51,0.3) 100%);
+}
+
+/* left spine: chapter number + vertical label */
+.spine {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 200px;
+  border-right: 2px solid var(--ink);
+  z-index: 2;
+  background: var(--bg2);
+}
+.dark .spine { background: #0b3028; border-color: var(--amber); }
+.spine .no {
+  position: absolute; top: 56px; left: 0; right: 0; text-align: center;
+  font-family: var(--en); font-weight: 600; font-size: 84px; line-height: 1;
+  color: var(--spruce);
+}
+.dark .spine .no { color: var(--amber); }
+.spine .no::after {
+  content: ""; display: block; width: 44px; height: 4px; background: var(--amber);
+  margin: 22px auto 0;
+}
+.spine .vt {
+  position: absolute; left: 0; right: 0; bottom: 120px; text-align: center;
+  writing-mode: vertical-rl; margin: 0 auto;
+  font-family: var(--mono); font-size: 20px; letter-spacing: 0.4em; color: var(--mute);
+  text-transform: uppercase;
+}
+
+.body {
+  position: absolute; left: 200px; right: 0; top: 0; bottom: 0;
+  padding: 120px 150px 130px 130px;
+  z-index: 2;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.tag {
+  font-family: var(--mono); font-size: 22px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--amber-d); margin: 0 0 30px; display: flex; align-items: center; gap: 18px;
+}
+.dark .tag { color: var(--amber); }
+.tag::before { content: ""; width: 56px; height: 2px; background: currentColor; }
+
+h1, h2 { margin: 0; font-family: var(--serif); font-weight: 900; color: var(--spruce); letter-spacing: 0.01em; }
+.dark h1, .dark h2 { color: #fff; }
+h1.xl { font-size: 128px; line-height: 1.12; }
+h1.lg { font-size: 104px; line-height: 1.15; }
+h1.md { font-size: 84px; line-height: 1.2; }
+h2.t { font-size: 62px; line-height: 1.3; font-weight: 600; }
+em.en, .en { font-family: var(--en); font-style: italic; font-weight: 400; }
+mark { background: none; color: inherit; box-shadow: inset 0 -0.32em 0 rgba(217,138,20,0.38); padding: 0 0.04em; }
+.dark mark { box-shadow: inset 0 -0.32em 0 rgba(217,138,20,0.55); }
+.lead { font-size: 44px; line-height: 1.55; color: var(--soft); margin: 44px 0 0; font-weight: 400; max-width: 1350px; }
+.dark .lead { color: #cfe0d8; }
+.lead b { color: var(--ink); font-weight: 600; }
+.dark .lead b { color: #fff; }
+.note { font-family: var(--en); font-style: italic; font-size: 34px; color: var(--mute); margin: 36px 0 0; line-height: 1.5; }
+.dark .note { color: #8fb3a5; }
+
+/* numbered list */
+.list { list-style: none; margin: 56px 0 0; padding: 0; counter-reset: n; }
+.list li {
+  counter-increment: n; position: relative;
+  font-size: 56px; line-height: 1.35; font-weight: 600; color: var(--ink);
+  padding: 22px 0 22px 120px; border-top: 1px solid var(--rule);
+}
+.list li:last-child { border-bottom: 1px solid var(--rule); }
+.list li::before {
+  content: "0" counter(n); position: absolute; left: 0; top: 30px;
+  font-family: var(--en); font-weight: 600; font-size: 48px; color: var(--amber-d);
+}
+.list li small { display: block; font-size: 28px; font-weight: 400; color: var(--mute); margin-top: 2px; }
+.dark .list li { color: #fff; border-color: rgba(207,224,216,0.25); }
+.dark .list li::before { color: var(--amber); }
+
+/* tiles */
+.tiles { display: grid; gap: 0; margin-top: 64px; border: 2px solid var(--ink); background: #f6f8f7; }
+.tiles.c3 { grid-template-columns: repeat(3, 1fr); }
+.tiles.c2 { grid-template-columns: repeat(2, 1fr); }
+.tiles.c4 { grid-template-columns: repeat(2, 1fr); }
+.tile { padding: 44px 44px 48px; border-right: 2px solid var(--ink); position: relative; }
+.tile:last-child { border-right: 0; }
+.tiles.c4 .tile:nth-child(2n) { border-right: 0; }
+.tiles.c4 .tile:nth-child(-n+2) { border-bottom: 2px solid var(--ink); }
+.tile .k { font-family: var(--mono); font-size: 20px; letter-spacing: 0.2em; color: var(--amber-d); margin: 0 0 16px; }
+.tile .w { font-size: 72px; font-weight: 900; color: var(--spruce); line-height: 1.1; margin: 0; }
+.tile .e { font-family: var(--en); font-style: italic; font-size: 34px; color: var(--mute); margin: 10px 0 0; }
+.tile .d { font-size: 36px; line-height: 1.45; color: var(--soft); margin: 14px 0 0; }
+.tile .h { font-size: 42px; font-weight: 600; color: var(--spruce); margin: 0; line-height: 1.3; }
+.tile.hi { background: var(--spruce); }
+.tile.hi .w, .tile.hi .h { color: #fff; }
+.tile.hi .e, .tile.hi .d { color: #b9d3c8; }
+.tile.hi .k { color: var(--amber); }
+
+/* topic strips */
+.strips { margin-top: 56px; display: flex; flex-wrap: wrap; gap: 22px 26px; }
+.strip {
+  font-size: 46px; font-weight: 600; padding: 18px 36px;
+  background: #f6f8f7; border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); color: var(--ink);
+}
+.strip.hi { background: var(--amber); box-shadow: 8px 8px 0 var(--spruce); border-color: var(--spruce); }
+
+/* flow */
+.flow { display: flex; align-items: stretch; margin-top: 70px; }
+.flow .n { flex: 1; background: #f6f8f7; border: 2px solid var(--ink); padding: 48px 20px; text-align: center; }
+.flow .n b { display: block; font-size: 76px; font-weight: 900; color: var(--spruce); }
+.flow .n span { font-size: 30px; color: var(--soft); display: block; margin-top: 10px; }
+.flow .n.last { background: var(--spruce); }
+.flow .n.last b { color: #fff; }
+.flow .n.last span { color: #b9d3c8; }
+.flow .ar { flex: 0 0 110px; display: flex; align-items: center; justify-content: center; }
+.flow .ar svg { width: 90px; height: 24px; }
+
+/* broken-window slides */
+.bw { display: flex; align-items: stretch; margin-top: 48px; }
+.bw .s { flex: 1; border: 2px solid var(--amber); background: rgba(11,48,40,0.7); padding: 36px 16px; text-align: center; }
+.bw .s b { display: block; font-size: 64px; font-weight: 900; color: #fff; }
+.bw .s span { display: block; margin-top: 8px; font-family: var(--mono); font-size: 22px; letter-spacing: 0.2em; color: #8fb3a5; }
+.bw .s.hi { background: var(--amber); }
+.bw .s.hi b { color: var(--spruce); }
+.bw .s.hi span { color: var(--spruce); }
+.bw .ar { flex: 0 0 110px; display: flex; align-items: center; justify-content: center; }
+.bw .ar svg { width: 90px; height: 24px; }
+.fork { display: flex; align-items: center; margin-top: 44px; }
+.fork .src { flex: 0 0 340px; background: var(--spruce); border: 2px solid var(--ink); padding: 40px 20px; text-align: center; }
+.fork .src b { display: block; font-size: 44px; font-weight: 900; color: #fff; }
+.fork .src span { display: block; margin-top: 8px; font-family: var(--en); font-size: 40px; color: var(--amber); }
+.fork .fk { flex: 0 0 120px; height: 220px; }
+.fork .br { flex: 1; display: flex; flex-direction: column; gap: 40px; }
+.fork .p { border: 2px solid var(--ink); background: #f6f8f7; padding: 22px 32px; }
+.fork .p b { display: block; font-size: 46px; font-weight: 900; color: var(--spruce); }
+.fork .p span { display: block; margin-top: 4px; font-size: 28px; color: var(--soft); }
+.fork .p.lost { border: 3px dashed var(--amber-d); background: rgba(217,138,20,0.14); }
+.fork .p.lost b { color: var(--amber-d); }
+
+/* cover & big statement helpers */
+.cover-title { margin-top: 20px; }
+.cover-meta { margin-top: 64px; font-size: 34px; letter-spacing: 0.08em; color: #b9d3c8; display: flex; gap: 28px; align-items: center; }
+.cover-meta i { width: 10px; height: 10px; background: var(--amber); transform: rotate(45deg); display: inline-block; }
+.ghost {
+  position: absolute; right: 80px; bottom: -60px; font-family: var(--en); font-style: italic; font-weight: 400;
+  font-size: 560px; line-height: 1; color: rgba(217,138,20,0.16); z-index: 1; pointer-events: none;
+}
+.slide:not(.dark) .ghost { color: rgba(15,61,51,0.07); }
+.big24 { font-family: var(--en); font-weight: 600; font-size: 300px; line-height: 0.9; color: var(--amber); }
+.split { display: flex; align-items: center; gap: 100px; }
+.split .ring { flex: 0 0 520px; }
+.split .ring svg { width: 520px; height: 520px; display: block; }
+
+.quote { font-family: var(--en); font-style: italic; font-size: 76px; line-height: 1.25; color: var(--spruce); margin: 40px 0 0; font-weight: 500; border-left: 8px solid var(--amber); padding-left: 44px; }
+.quote .zh { display: block; font-family: var(--serif); font-style: normal; font-size: 44px; color: var(--soft); margin-top: 28px; font-weight: 400; }
+.dark .quote { color: #fff; }
+.dark .quote .zh { color: #cfe0d8; }
+
+.vs { display: grid; grid-template-columns: 1fr 1fr; margin-top: 60px; border: 2px solid var(--ink); }
+.vs > div { padding: 52px 50px; background: #f6f8f7; min-height: 330px; }
+.vs > div + div { border-left: 2px solid var(--ink); background: var(--spruce); color: #fff; }
+.vs h3 { margin: 0 0 22px; font-size: 52px; font-weight: 900; color: var(--spruce); }
+.vs > div + div h3 { color: var(--amber); }
+.vs p { margin: 0; font-size: 38px; line-height: 1.5; color: var(--soft); }
+.vs > div + div p { color: #dcebe4; }
+.vs p.q { font-family: var(--en); font-style: italic; font-size: 46px; line-height: 1.35; color: #fff; }
+
+/* page number */
+.pager {
+  position: absolute; right: 56px; bottom: 44px; z-index: 20;
+  font-family: var(--mono); font-size: 26px; letter-spacing: 0.1em; color: var(--mute);
+  background: var(--bg); padding: 6px 16px; border: 1px solid var(--rule);
+}
+.pager b { color: var(--ink); font-weight: 500; }
+.pager.on-dark { background: #0b3028; border-color: rgba(207,224,216,0.3); color: #8fb3a5; }
+.pager.on-dark b { color: var(--amber); }
+
+/* reveals: play whenever slide becomes active */
+.rv { opacity: 0; transform: translateY(24px); }
+.slide.active .rv { animation: rise 0.65s cubic-bezier(.2,.7,.2,1) forwards; }
+.slide.active .rv.d1 { animation-delay: 0.1s; }
+.slide.active .rv.d2 { animation-delay: 0.24s; }
+.slide.active .rv.d3 { animation-delay: 0.4s; }
+.slide.active .rv.d4 { animation-delay: 0.56s; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+/* slides 11-12: stepped reveal for .bw / .fork (base state = final state; reduced-motion kills animation) */
+.slide.active .bw .s, .slide.active .bw .ar path,
+.slide.active .fork .src, .slide.active .fork .fk path, .slide.active .fork .p { animation-fill-mode: backwards; animation-timing-function: cubic-bezier(.2,.7,.2,1); }
+.slide.active .bw .s { animation-name: bwPop; animation-duration: 0.4s; }
+.slide.active .bw .s:nth-child(1) { animation-delay: 0.5s; }
+.slide.active .bw .s:nth-child(3) { animation-delay: 1.05s; }
+.slide.active .bw .s.hi { animation-name: bwPop, bwHi; animation-duration: 0.4s, 0.7s; animation-delay: 1.6s, 1.6s; }
+.slide.active .bw .ar path { stroke-dasharray: 140; animation: bwDraw 0.35s ease-out backwards; }
+.slide.active .bw .ar:nth-child(2) path { animation-delay: 0.8s; }
+.slide.active .bw .ar:nth-child(4) path { animation-delay: 1.35s; }
+.slide.active .fork .src { animation: fkIn 0.5s both; animation-delay: 0.5s; animation-fill-mode: backwards; }
+.slide.active .fork .fk path { stroke-dasharray: 200; animation: fkDraw 0.6s ease-out backwards; animation-delay: 0.95s; }
+.slide.active .fork .p.seen { animation: fkIn 0.5s backwards; animation-delay: 1.5s; }
+.slide.active .fork .p.lost { animation: fkIn 0.5s backwards; animation-delay: 1.85s; }
+@keyframes bwPop { from { opacity: 0; transform: scale(0.9); } }
+@keyframes bwHi { 0%, 40% { box-shadow: 0 0 0 0 rgba(217,138,20,0.7); } 100% { box-shadow: 0 0 0 28px rgba(217,138,20,0); } }
+@keyframes bwDraw { from { stroke-dashoffset: 140; opacity: 0; } 20% { opacity: 1; } }
+@keyframes fkIn { from { opacity: 0; transform: translateX(-10px); } }
+@keyframes fkDraw { from { stroke-dashoffset: 200; } }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <div class="deck-stage" id="deckStage">
+
+    <!-- 01 封面 -->
+    <section class="slide dark active" data-title="封面" data-start="0">
+      <div class="spine"><div class="no">00</div><div class="vt">Introduction</div></div>
+      <div class="ghost">S&amp;D</div>
+      <div class="body">
+        <p class="tag rv">Lecture 0 · Introduction</p>
+        <h1 class="xl cover-title rv d1">导论</h1>
+        <h2 class="t rv d2" style="margin-top:28px;font-size:76px;font-weight:600">微观经济学供需模型入门</h2>
+        <div class="cover-meta rv d3"><span>北大光华</span><i></i><span>光华在线</span></div>
+      </div>
+    </section>
+
+    <!-- 02 三件事 -->
+    <section class="slide" data-title="本节三件事" data-start="10.2">
+      <div class="spine"><div class="no">01</div><div class="vt">Agenda</div></div>
+      <div class="body">
+        <p class="tag rv">本节</p>
+        <h1 class="md rv d1">本节只讲三件事</h1>
+        <ul class="list rv d2">
+          <li>经济学的定义</li>
+          <li>经济学研究的问题</li>
+          <li>经济学特有的思维方式</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 03 AEA -->
+    <section class="slide" data-title="AEA 与研究问题" data-start="40.2">
+      <div class="spine"><div class="no">02</div><div class="vt">AEA</div></div>
+      <div class="body">
+        <p class="tag rv">当代经济学在问什么</p>
+        <h1 class="lg rv d1">AEA 的议题清单</h1>
+        <div class="tiles c3 rv d2">
+          <div class="tile"><p class="k">Q1</p><p class="h">经济增长的<br/>原因是什么？</p></div>
+          <div class="tile"><p class="k">Q2</p><p class="h">金融危机<br/>为什么发生？</p></div>
+          <div class="tile hi"><p class="k">Q3</p><p class="h">收入与财富不平等<br/>为何加剧？</p></div>
+        </div>
+        <p class="note rv d3">American Economic Association · 网页截图</p>
+      </div>
+    </section>
+
+    <!-- 04 国计民生 -->
+    <section class="slide" data-title="国计民生清单" data-start="75">
+      <div class="spine"><div class="no">03</div><div class="vt">Scope</div></div>
+      <div class="body">
+        <p class="tag rv">符合直觉</p>
+        <h2 class="t rv d1">都是国家经济、<mark>国计民生</mark>的大问题</h2>
+        <div class="strips rv d2">
+          <span class="strip">增长</span>
+          <span class="strip">危机</span>
+          <span class="strip">不平等</span>
+          <span class="strip">就业</span>
+          <span class="strip">物价</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 分析方法 > 国计民生 -->
+    <section class="slide dark" data-title="分析方法 大于 研究清单" data-start="91.3">
+      <div class="spine"><div class="no">04</div><div class="vt">Method</div></div>
+      <div class="ghost">&gt;</div>
+      <div class="body">
+        <p class="tag rv">但这还不是关键</p>
+        <div class="vs rv d1" style="margin-top:20px">
+          <div><h3>研究的问题</h3><p>国计民生清单<br/>别的学科也谈</p></div>
+          <div><h3>分析方法</h3><p class="q">经济学区别于<br/>其他社科的特点</p></div>
+        </div>
+        <p class="lead rv d2" style="margin-top:36px">一套看世界、分析问题、认识规律的<mark>特有方式</mark>。</p>
+      </div>
+    </section>
+
+    <!-- 06 oikonomos -->
+    <section class="slide" data-title="oikonomos 管理家庭" data-start="115">
+      <div class="spine"><div class="no">05</div><div class="vt">Oikonomos</div></div>
+      <div class="body">
+        <p class="tag rv">词源 · 希腊语</p>
+        <h1 class="lg rv d1"><span class="en">oikonomos</span></h1>
+        <p class="lead rv d2" style="margin-top:20px">“管理家庭的人”</p>
+        <div class="flow rv d3" style="margin-top:50px">
+          <div class="n"><b>家庭</b><span>小</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>企业</b><span>中</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>国家</b><span>大 · 决策有何相通？</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 定义 -->
+    <section class="slide" data-title="经济学的定义" data-start="138.6">
+      <div class="spine"><div class="no">06</div><div class="vt">Definition</div></div>
+      <div class="body">
+        <p class="tag rv">经济学的定义</p>
+        <h2 class="t rv d1">研究个体或集体如何决策：<br/>合理、有效地配置<mark>稀缺资源</mark>的社会科学</h2>
+        <div class="tiles c3 rv d2">
+          <div class="tile"><p class="k">01</p><p class="w">稀缺</p><p class="e">Scarcity</p></div>
+          <div class="tile"><p class="k">02</p><p class="w">有效</p><p class="e">Efficiency</p></div>
+          <div class="tile hi"><p class="k">03</p><p class="w">决策</p><p class="e">Decision</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 关键词 稀缺 -->
+    <section class="slide dark" data-title="关键词一：稀缺" data-start="160">
+      <div class="spine"><div class="no">07</div><div class="vt">Keyword 1</div></div>
+      <div class="ghost">1</div>
+      <div class="body">
+        <p class="tag rv">关键词 01</p>
+        <h1 class="xl rv d1"><mark>稀缺</mark></h1>
+        <p class="lead rv d2">欲望无限，资源有限。</p>
+        <p class="note rv d3">Scarcity</p>
+      </div>
+    </section>
+
+    <!-- 09 关键词 有效配置 -->
+    <section class="slide" data-title="关键词二：有效配置" data-start="168">
+      <div class="spine"><div class="no">08</div><div class="vt">Keyword 2</div></div>
+      <div class="ghost">2</div>
+      <div class="body">
+        <p class="tag rv">关键词 02</p>
+        <h1 class="xl rv d1"><mark>有效</mark>配置</h1>
+        <p class="lead rv d2">同样的资源，<b>用在最值的地方</b>。</p>
+        <p class="note rv d3">Efficiency</p>
+      </div>
+    </section>
+
+    <!-- 10 关键词 社会科学 -->
+    <section class="slide dark" data-title="关键词三：社会科学" data-start="176">
+      <div class="spine"><div class="no">09</div><div class="vt">Keyword 3</div></div>
+      <div class="ghost">3</div>
+      <div class="body">
+        <p class="tag rv">关键词 03</p>
+        <h1 class="xl rv d1"><mark>社会</mark>科学</h1>
+        <p class="lead rv d2">研究人如何选择、如何决策。</p>
+        <p class="note rv d3">Social Science</p>
+      </div>
+    </section>
+
+    <!-- 11 决策论 -->
+    <section class="slide" data-title="本质是决策论" data-start="184.4">
+      <div class="spine"><div class="no">10</div><div class="vt">Decision</div></div>
+      <div class="body">
+        <p class="tag rv">本质</p>
+        <h1 class="lg rv d1">经济学，是<mark>决策论</mark></h1>
+        <div class="flow rv d2" style="margin-top:56px">
+          <div class="n"><b>工作</b><span>个人</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>挣钱</b><span>消费</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>满足需求</b><span>目的</span></div>
+        </div>
+        <p class="note rv d3">企业追逐利润　·　国家追求富强与福祉</p>
+      </div>
+    </section>
+
+    <!-- 12 目标与限制 -->
+    <section class="slide dark" data-title="有目标就有限制" data-start="225.8">
+      <div class="spine"><div class="no">11</div><div class="vt">Constraint</div></div>
+      <div class="ghost">?!</div>
+      <div class="body">
+        <p class="tag rv">目标 · 限制</p>
+        <h1 class="lg rv d1">有目标，<br/>就有限制</h1>
+        <p class="lead rv d2">欲望无限，条件有限——<br/>所以必须<b>取舍</b>。</p>
+      </div>
+    </section>
+
+    <!-- 13 稀缺举例 -->
+    <section class="slide" data-title="稀缺举例" data-start="257.2">
+      <div class="spine"><div class="no">12</div><div class="vt">Scarcity</div></div>
+      <div class="body">
+        <p class="tag rv">稀缺 · 举例</p>
+        <h2 class="t rv d1">稀缺，取决于你看多长的时间</h2>
+        <div class="tiles c2 rv d2">
+          <div class="tile"><p class="k">化石能源</p><p class="h">短期丰裕<br/>长期稀缺</p></div>
+          <div class="tile"><p class="k">团队资金 · 人手</p><p class="h">长期可补<br/>短期稀缺</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 自助餐 -->
+    <section class="slide" data-title="自助餐" data-start="318">
+      <div class="spine"><div class="no">13</div><div class="vt">Buffet</div></div>
+      <div class="body">
+        <p class="tag rv">钱，总是约束吗？</p>
+        <h1 class="lg rv d1">自助餐，<br/>钱不是约束</h1>
+        <div class="flow rv d2" style="margin-top:50px">
+          <div class="n"><b>入场券</b><span>已付费</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>随便吃</b><span>钱不再限制</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>真的吗？</b><span>还有什么在限制</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 胃 -->
+    <section class="slide dark" data-title="胃的容量" data-start="343">
+      <div class="spine"><div class="no">14</div><div class="vt">Stomach</div></div>
+      <div class="body">
+        <div class="split">
+          <div class="ring rv">
+            <svg viewBox="0 0 520 520" aria-hidden="true">
+              <circle cx="260" cy="260" r="230" fill="none" stroke="rgba(207,224,216,0.25)" stroke-width="2"/>
+              <path d="M300 90C300 40 380 40 380 110C380 190 430 200 430 300C430 420 330 470 240 440C160 412 150 330 190 270C220 225 300 200 300 90Z" fill="rgba(217,138,20,0.25)" stroke="#d98a14" stroke-width="6"/>
+              <text x="260" y="350" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="26" letter-spacing="6" fill="#cfe0d8">≈ FIST</text>
+            </svg>
+          </div>
+          <div>
+            <p class="tag rv d1">真正的约束</p>
+            <h1 class="lg rv d2">胃的容量，<br/>拳头大小</h1>
+            <p class="lead rv d3" style="margin-top:36px">再撑，也撑不到哪去。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 亚当·斯密 词条 -->
+    <section class="slide" data-title="亚当·斯密：胃" data-start="362">
+      <div class="spine"><div class="no">15</div><div class="vt">Adam Smith</div></div>
+      <div class="body">
+        <p class="tag rv">《国富论》· 1775 · 词条“胃”</p>
+        <div class="quote rv d1" style="font-size:62px">The desire of food is limited in every man by the narrow capacity of the human stomach.<span class="zh">胃：对食物的欲望受其容量的限制。</span></div>
+        <p class="note rv d2">— Adam Smith</p>
+      </div>
+    </section>
+
+    <!-- 17 胃也可撑 -> 时间 -->
+    <section class="slide dark" data-title="胃也可撑，时间才是终极" data-start="392">
+      <div class="spine"><div class="no">16</div><div class="vt">Beyond stomach</div></div>
+      <div class="body">
+        <p class="tag rv">“胃也可以撑大？”</p>
+        <h1 class="md rv d1">吃一会儿，歇一会儿……</h1>
+        <div class="flow rv d2" style="margin-top:56px">
+          <div class="n"><b>馒头</b><span>歇一会</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>包子</b><span>再歇</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>打烊了</b><span>时间到</span></div>
+        </div>
+        <p class="lead rv d3" style="margin-top:36px">胃能撑，<mark>时间</mark>撑不了。</p>
+      </div>
+    </section>
+
+    <!-- 18 时间 -->
+    <section class="slide dark" data-title="时间是终极约束" data-start="423.4">
+      <div class="spine"><div class="no">17</div><div class="vt">Time</div></div>
+      <div class="body">
+        <div class="split">
+          <div class="ring rv">
+            <svg viewBox="0 0 520 520" aria-hidden="true">
+              <circle cx="260" cy="260" r="230" fill="none" stroke="rgba(207,224,216,0.25)" stroke-width="2"/>
+              <circle cx="260" cy="260" r="190" fill="none" stroke="rgba(207,224,216,0.12)" stroke-width="30"/>
+              <circle cx="260" cy="260" r="190" fill="none" stroke="#d98a14" stroke-width="30" stroke-dasharray="1194" stroke-dashoffset="0" transform="rotate(-90 260 260)"/>
+              <g stroke="#cfe0d8" stroke-width="3" id="ticks"></g>
+              <text x="260" y="300" text-anchor="middle" font-family="Fraunces, serif" font-size="150" font-weight="600" fill="#fff">24</text>
+              <text x="260" y="352" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="26" letter-spacing="8" fill="#8fb3a5">HOURS</text>
+            </svg>
+          </div>
+          <div>
+            <p class="tag rv d1">终极约束</p>
+            <h1 class="lg rv d2">时间，<br/>最稀缺</h1>
+            <p class="lead rv d3" style="margin-top:36px">每人每天，<mark>只有 24 小时</mark>。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19 时间规划局 -->
+    <section class="slide" data-title="时间无法转移" data-start="440">
+      <div class="spine"><div class="no">18</div><div class="vt">In Time</div></div>
+      <div class="body">
+        <p class="tag rv">时间 · 无法交易</p>
+        <h1 class="md rv d1">时间，无法在人与人之间转移</h1>
+        <div class="vs rv d2">
+          <div><h3>现实</h3><p>可以出卖工作时间，<br/>但时间本身不能转让。</p></div>
+          <div><h3>电影《时间规划局》</h3><p class="q">时间 = 财富</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 20 三词逻辑 -->
+    <section class="slide" data-title="三词逻辑" data-start="463.4">
+      <div class="spine"><div class="no">19</div><div class="vt">Logic</div></div>
+      <div class="body">
+        <p class="tag rv">三词之间的逻辑</p>
+        <h2 class="t rv d1">因为稀缺，所以权衡；<br/>权衡得好，才叫有效。</h2>
+        <div class="flow rv d2">
+          <div class="n"><b>稀缺</b><span>前提</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>权衡</b><span>取舍</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>有效配置</b><span>目标</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21 破窗切入 (保留 SVG 步进动画) -->
+    <section class="slide dark" data-title="破窗理论" data-start="503.4">
+      <div class="spine"><div class="no">20</div><div class="vt">Case</div></div>
+      <div class="ghost">!</div>
+      <div class="body">
+        <p class="tag rv">课堂案例</p>
+        <h1 class="md rv d1">破窗理论</h1>
+        <p class="lead rv d2" style="margin-top:28px">有人砸了面包店的窗，玻璃店生意来了——有人说：<mark>“砸窗能创造就业。”</mark></p>
+        <div class="bw rv d3">
+          <div class="s"><b>砸窗</b><span>01</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="s"><b>修窗</b><span>02</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="s hi"><b>钱到玻璃匠</b><span>03</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 22 讨论 -->
+    <section class="slide" data-title="暂停思考：有道理吗？" data-start="618.7">
+      <div class="spine"><div class="no">21</div><div class="vt">Pause</div></div>
+      <div class="ghost">?</div>
+      <div class="body">
+        <p class="tag rv">请暂停视频</p>
+        <h1 class="lg rv d1">这个观点，<br/>有道理吗？</h1>
+        <p class="lead rv d2">先说明白：这笔<mark>账算得没错</mark>。</p>
+      </div>
+    </section>
+
+    <!-- 23 GDP 乘数 -->
+    <section class="slide dark" data-title="GDP 与乘数效应" data-start="645">
+      <div class="spine"><div class="no">22</div><div class="vt">Multiplier</div></div>
+      <div class="body">
+        <p class="tag rv">宏观核算 · GDP</p>
+        <h1 class="lg rv d1">GDP = C + I + G + NX</h1>
+        <div class="flow rv d2" style="margin-top:50px">
+          <div class="n"><b>窗户</b><span>价值 1</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>× 1/(1−s)</b><span>储蓄率 s = 20%</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>5 倍</b><span>乘数效应</span></div>
+        </div>
+        <p class="note rv d3">Multiplier Effect · 一连串消费，都记在 C 里</p>
+      </div>
+    </section>
+
+    <!-- 24 该砸吗 -->
+    <section class="slide" data-title="那见玻璃就砸？" data-start="705">
+      <div class="spine"><div class="no">23</div><div class="vt">Policy</div></div>
+      <div class="body">
+        <p class="tag rv">思辨</p>
+        <h1 class="lg rv d1">那么，<br/>见玻璃就<mark>砸</mark>？</h1>
+        <p class="lead rv d2">评价一个理论，要看它的<b>政策推论靠不靠谱</b>。</p>
+        <p class="note rv d3">连锁反应有多快？不是重点。该不该靠破窗发展经济，才是。</p>
+      </div>
+    </section>
+
+    <!-- 25 算得对 ≠ 该这么做 -->
+    <section class="slide dark" data-title="算得对不等于该这么做" data-start="734.8">
+      <div class="spine"><div class="no">24</div><div class="vt">Right ≠ Should</div></div>
+      <div class="body">
+        <p class="tag rv">破窗 · 关键</p>
+        <h1 class="md rv d1">算得对 ≠ 该这么做</h1>
+        <p class="lead rv d2" style="margin-top:24px">修窗的钱，<b>就不能花在面包店真正需要的地方</b>。</p>
+        <div class="fork rv d3">
+          <div class="src"><b>同一笔钱</b><span>¥ 1,000</span></div>
+          <svg class="fk" viewBox="0 0 120 220"><path d="M0 110H40M40 110C80 110 70 40 120 40M40 110C80 110 70 180 120 180" fill="none" stroke="#d98a14" stroke-width="4"/></svg>
+          <div class="br">
+            <div class="p seen"><b>修窗</b><span>看得见 · 只是回到原样</span></div>
+            <div class="p lost"><b>新烤炉 / 招工 / 新品</b><span>看不见 · 被挤掉了</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 26 机会成本 -->
+    <section class="slide" data-title="机会成本" data-start="800">
+      <div class="spine"><div class="no">25</div><div class="vt">Opportunity cost</div></div>
+      <div class="body">
+        <p class="tag rv">机会成本</p>
+        <h1 class="lg rv d1">真正的成本，<br/>是<mark>放弃的最好选择</mark></h1>
+        <p class="lead rv d2">用资源做这件事，就放弃了用它做别的事。</p>
+        <p class="note rv d3">考虑机会成本，破窗的净收益为负——没有效率。</p>
+      </div>
+    </section>
+
+    <!-- 27 凯恩斯 / 基础设施 -->
+    <section class="slide dark" data-title="凯恩斯与基础设施" data-start="905">
+      <div class="spine"><div class="no">26</div><div class="vt">Keynes</div></div>
+      <div class="body">
+        <p class="tag rv">乘数效应 · 凯恩斯</p>
+        <div class="vs rv d1" style="margin-top:20px">
+          <div><h3>经济低谷</h3><p>预期悲观<br/>消费、投资都低迷</p></div>
+          <div><h3>政府出手</h3><p class="q">投资基础设施<br/>修铁路 · 建公路</p></div>
+        </div>
+        <p class="lead rv d2" style="margin-top:36px">不是随便砸窗——要有<mark>长期社会效应</mark>。</p>
+      </div>
+    </section>
+
+    <!-- 28 always think about alternatives -->
+    <section class="slide" data-title="Always think about alternatives" data-start="960">
+      <div class="spine"><div class="no">27</div><div class="vt">Alternatives</div></div>
+      <div class="body">
+        <p class="tag rv">经济学思维</p>
+        <div class="quote rv d1">Always think about alternatives.<span class="zh">不这么做，有没有更好的办法？</span></div>
+        <div class="vs rv d2" style="margin-top:44px;grid-template-columns:1fr 1fr">
+          <div style="min-height:0;padding:30px 40px"><h3 style="font-size:44px;margin:0">有 → 现决策不是最优</h3></div>
+          <div style="min-height:0;padding:30px 40px"><h3 style="font-size:44px;margin:0">没有 → 相当不错</h3></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 29 建设性 vs 破坏性 -->
+    <section class="slide dark" data-title="建设性 vs 破坏性批评" data-start="1000">
+      <div class="spine"><div class="no">28</div><div class="vt">Critique</div></div>
+      <div class="body">
+        <p class="tag rv">批评别人时，也要这样想</p>
+        <div class="vs rv d1">
+          <div><h3>destructive</h3><p>只挑毛病，<br/>提不出更好的办法。</p></div>
+          <div><h3>constructive</h3><p class="q">给出更好的方案</p></div>
+        </div>
+        <p class="note rv d2">没有更好的办法 = 已是现有技术、信息、条件下的最好决策。</p>
+      </div>
+    </section>
+
+    <!-- 30 就业：数量 vs 价值 -->
+    <section class="slide" data-title="岗位数量 vs 岗位价值" data-start="1038.2">
+      <div class="spine"><div class="no">29</div><div class="vt">Jobs</div></div>
+      <div class="body">
+        <p class="tag rv">破窗的翻版 · 就业</p>
+        <h2 class="t rv d1">岗位，数量重要，还是价值重要？</h2>
+        <div class="vs rv d2">
+          <div><h3>只数岗位</h3><p>创造多少就业，<br/>却没问：值不值？</p></div>
+          <div><h3>让岗位算数</h3><p class="q">劳动力，也是稀缺资源。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 31 农业就业 -->
+    <section class="slide dark" data-title="农业就业下降≠退步" data-start="1110">
+      <div class="spine"><div class="no">30</div><div class="vt">Agriculture</div></div>
+      <div class="body">
+        <p class="tag rv">岗位减少 = 退步吗？</p>
+        <div class="tiles c3 rv d1" style="background:rgba(11,48,40,.7);border-color:var(--amber)">
+          <div class="tile" style="border-color:var(--amber)"><p class="k">建国初期 · 中国</p><p class="w" style="color:#fff">90%</p></div>
+          <div class="tile" style="border-color:var(--amber)"><p class="k">今天 · 中国</p><p class="w" style="color:#fff">20%</p></div>
+          <div class="tile hi" style="border-color:var(--amber)"><p class="k">美国</p><p class="w" style="color:var(--spruce)">2%</p><p class="d" style="color:var(--spruce)">还能出口</p></div>
+        </div>
+        <p class="lead rv d2" style="margin-top:44px">农业劳动力占比下降——生活因此更差了吗？</p>
+      </div>
+    </section>
+
+    <!-- 32 熊彼特 -->
+    <section class="slide" data-title="熊彼特：破坏性创新" data-start="1150">
+      <div class="spine"><div class="no">31</div><div class="vt">Schumpeter</div></div>
+      <div class="body">
+        <p class="tag rv">熊彼特 · 破坏性创新</p>
+        <h1 class="md rv d1">进步，常来自<mark>摧毁旧岗位</mark></h1>
+        <div class="flow rv d2" style="margin-top:56px">
+          <div class="n"><b>旧岗位</b><span>被替代</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n"><b>技术创新</b><span>新岗位</span></div>
+          <div class="ar"><svg viewBox="0 0 90 24"><path d="M0 12H80M68 2l12 10-12 10" fill="none" stroke="#d98a14" stroke-width="4"/></svg></div>
+          <div class="n last"><b>生产率↑</b><span>创造更大价值</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 33 曼昆金句 -->
+    <section class="slide dark" data-title="曼昆金句" data-start="1183">
+      <div class="spine"><div class="no">32</div><div class="vt">Mankiw</div></div>
+      <div class="body">
+        <p class="tag rv">N. Gregory Mankiw</p>
+        <div class="quote rv d1" style="font-size:84px">Instead of counting jobs, we should make each job count.<span class="zh">与其数岗位，不如让每个岗位都发挥作用。</span></div>
+      </div>
+    </section>
+
+    <!-- 34 小结 -->
+    <section class="slide" data-title="小结" data-start="1206.8">
+      <div class="spine"><div class="no">33</div><div class="vt">Summary</div></div>
+      <div class="body">
+        <p class="tag rv">小结</p>
+        <h1 class="md rv d1">经济学，是方法论，更是决策论</h1>
+        <ul class="list rv d2" style="margin-top:44px">
+          <li>稀缺，是出发点</li>
+          <li>有效配置，是追问</li>
+          <li>always think about alternatives</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 35 微观 / 宏观 -->
+    <section class="slide" data-title="微观与宏观" data-start="1262">
+      <div class="spine"><div class="no">34</div><div class="vt">Micro / Macro</div></div>
+      <div class="body">
+        <p class="tag rv">经济学的分类</p>
+        <div class="vs rv d1" style="margin-top:20px">
+          <div><h3>微观经济学</h3><p>个体 · 家庭 · 企业<br/>市场分析 · 价格 · 厂商竞争</p></div>
+          <div><h3>宏观经济学</h3><p>国家整体<br/>增长 · 商业周期 · 汇率 · 利率</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 36 供需入口 -->
+    <section class="slide dark" data-title="供需模型入口" data-start="1300">
+      <div class="spine"><div class="no">→</div><div class="vt">Next</div></div>
+      <div class="ghost">S&amp;D</div>
+      <div class="body">
+        <p class="tag rv">下节预告 · 供需模型</p>
+        <h1 class="lg rv d1">供给 × 需求</h1>
+        <div class="strips rv d2">
+          <span class="strip hi">中东战争 → 油价涨 → 二手车价跌</span>
+          <span class="strip">海南房租为何骤降</span>
+          <span class="strip">限租 → 短缺</span>
+        </div>
+        <p class="note rv d3">Supply &amp; Demand · 下节课再见</p>
+      </div>
+    </section>
+
+    <div class="pager" id="pager" aria-live="polite"><b id="pageCur">1</b> / <span id="pageTotal">36</span></div>
+  </div>
+</div>
+
+<div class="deck-controls">
+  <audio id="lecture-audio" controls src="P01_导学_128k.mp3"></audio>
+  <label title="默认关闭：手动翻页不跳音频"><input type="checkbox" id="seekOnManual" /> 翻页跟音</label>
+</div>
+
+<script>
+(function () {
+  const CUES = Array.from(document.querySelectorAll('#deckStage .slide')).map((el, i) => ({ index: i, title: el.dataset.title, startSec: parseFloat(el.dataset.start) || 0 }));
+  const stage = document.getElementById('deckStage');
+  const slides = Array.from(stage.querySelectorAll('.slide'));
+  const pageCur = document.getElementById('pageCur');
+  const pager = document.getElementById('pager');
+  const audio = document.getElementById('lecture-audio');
+  const seekOnManual = document.getElementById('seekOnManual');
+  let index = Math.max(0, slides.findIndex(s => s.classList.contains('active')));
+  let autoFlip = true; // temporarily suppress after manual seek-driven change not needed
+  let suppressAutoUntil = 0;
+
+  document.getElementById('pageTotal').textContent = String(slides.length);
+
+  const ticks = document.getElementById('ticks');
+  if (ticks) {
+    let t = '';
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const r1 = 208, r2 = i % 6 === 0 ? 236 : 226;
+      t += '<line x1="' + (260 + Math.sin(a) * r1).toFixed(1) + '" y1="' + (260 - Math.cos(a) * r1).toFixed(1) +
+           '" x2="' + (260 + Math.sin(a) * r2).toFixed(1) + '" y2="' + (260 - Math.cos(a) * r2).toFixed(1) + '"/>';
+    }
+    ticks.innerHTML = t;
+  }
+
+  function fitStage() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const scale = Math.min(vw / 1920, vh / 1080);
+    const x = (vw - 1920 * scale) / 2;
+    const y = (vh - 1080 * scale) / 2;
+    stage.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + scale + ')';
+  }
+
+  function show(i, opts) {
+    opts = opts || {};
+    if (i < 0 || i >= slides.length) return;
+    slides.forEach((s, n) => s.classList.toggle('active', n === i));
+    index = i;
+    pageCur.textContent = String(i + 1);
+    pager.classList.toggle('on-dark', slides[i].classList.contains('dark'));
+    if (opts.seekAudio && audio && CUES[i]) {
+      const t = CUES[i].startSec;
+      try {
+        if (Math.abs((audio.currentTime || 0) - t) > 0.35) audio.currentTime = t;
+      } catch (e) {}
+      suppressAutoUntil = performance.now() + 400;
+    }
+  }
+
+  function slideIndexForTime(t) {
+    let i = 0;
+    for (let n = 0; n < CUES.length; n++) {
+      if (t + 1e-6 >= CUES[n].startSec) i = n;
+      else break;
+    }
+    return i;
+  }
+
+  const next = () => show(index + 1, { seekAudio: !!(seekOnManual && seekOnManual.checked) });
+  const prev = () => show(index - 1, { seekAudio: !!(seekOnManual && seekOnManual.checked) });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && e.target.tagName === 'AUDIO' && e.key === ' ') return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); show(0, { seekAudio: !!(seekOnManual && seekOnManual.checked) }); }
+    else if (k === 'End') { e.preventDefault(); show(slides.length - 1, { seekAudio: !!(seekOnManual && seekOnManual.checked) }); }
+  });
+
+  stage.addEventListener('click', (e) => {
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    if (x > 0.55) next(); else if (x < 0.45) prev();
+  });
+
+  if (audio) {
+    audio.addEventListener('timeupdate', () => {
+      if (performance.now() < suppressAutoUntil) return;
+      const want = slideIndexForTime(audio.currentTime || 0);
+      if (want !== index) show(want);
+    });
+    audio.addEventListener('seeked', () => {
+      const want = slideIndexForTime(audio.currentTime || 0);
+      show(want);
+    });
+  }
+
+  window.addEventListener('resize', fitStage);
+  fitStage();
+  show(index);
+})();
+</script>
+</body>
+</html>
